@@ -1,0 +1,17 @@
+[package]
+name = "pratt"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+do_while = "0.1.0"
+pratt_derive = { version = "0.1.0", path = "derive" }
+span = { version = "0.1.0", path = "../span" }
+thiserror = "1.0.44"
+
+[dev-dependencies]
+once_cell = "1.18.0"
+pretty_assertions = "1.4.0"
+rstest = "0.21.0"
