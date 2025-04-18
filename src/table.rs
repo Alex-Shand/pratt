@@ -194,7 +194,7 @@ impl<T: Token + std::fmt::Debug, Context: Copy, Ast> Table<T, Context, Ast> {
 
 #[cfg(test)]
 mod tests {
-    use once_cell::sync::Lazy;
+    use std::sync::LazyLock;
 
     use super::*;
     use crate::Token as _;
@@ -278,7 +278,7 @@ mod tests {
         Err(Error::Custom("Custom Error".into()))
     }
 
-    static TABLE: Lazy<Table<Token, (), Ast>> = Lazy::new(|| {
+    static TABLE: LazyLock<Table<Token, (), Ast>> = LazyLock::new(|| {
         crate::pratt! {
             Assig =>  [     , assig, R,     _ ];
             Add   =>  [     ,    op, L,  PLUS ];

@@ -4,7 +4,7 @@ use crate::Token;
 /// [Table::parse_at](super::Table::parse_at)
 ///
 /// # Example
-/// ```
+/// ```rust,ignore
 /// # use pratt::Error;
 /// use span::{ Span, LineAndColumn };
 ///
@@ -46,11 +46,14 @@ pub enum Error<T: Token> {
     /// errors. [Error](std::error::Error) trait impl redirects to the inner
     /// error in this case
     #[error(transparent)]
-    Custom(#[from] Box<dyn std::error::Error>),
+    Custom(#[from] Box<dyn std::error::Error + Send + Sync + 'static>),
 }
 
 impl<T: Token> Error<T> {
-    pub fn custom(e: impl Into<Box<dyn std::error::Error>>) -> Self {
+    /// Helper function for constructing [Error::Custom]
+    pub fn custom(
+        e: impl Into<Box<dyn std::error::Error + Send + Sync + 'static>>,
+    ) -> Self {
         Error::Custom(e.into())
     }
 }

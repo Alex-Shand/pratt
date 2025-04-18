@@ -37,7 +37,7 @@ pub(crate) fn derive_token_impl(input: syn::ItemEnum) -> Result<TokenStream> {
     let (typ_arms, payload_arms, span_arms) = parsed.iter().map(|(variant, fields, payload, span)| {
         let (pat, binders, ty) = parse_fields(fields)?;
         let span = span.as_ref().map_or_else(
-            || quote!(::span::Span::UNKNOWN),
+            || quote!(#pratt::span::Span::UNKNOWN),
             |s| quote!(#s)
         );
         Ok((
@@ -62,7 +62,7 @@ pub(crate) fn derive_token_impl(input: syn::ItemEnum) -> Result<TokenStream> {
                 }
             }
 
-            fn span(&self) -> ::span::Span {
+            fn span(&self) -> #pratt::span::Span {
                 match self {
                     #(#span_arms),*
                 }

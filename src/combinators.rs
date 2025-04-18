@@ -4,6 +4,8 @@ use do_while::do_while;
 
 use crate::{Lexer, Result};
 
+/// Given a parser for an element construct a new parser which parses a possibly
+/// empty list of elements
 pub fn separated_list<Token: crate::Token, Context: Copy, Element>(
     parse_element: impl Fn(
         &mut dyn Lexer<Token = Token, Context = Context>,
@@ -25,12 +27,19 @@ pub fn separated_list<Token: crate::Token, Context: Copy, Element>(
     Ok(result)
 }
 
-pub fn non_empty_separated_list<Token: crate::Token, Context: Copy, Element>(
+/// Given a parser for an element construct a new parser which parses a
+/// non-empty list of elements
+pub fn non_empty_separated_list<
+    'lexer,
+    Token: crate::Token,
+    Context: Copy,
+    Element,
+>(
     parse_element: impl Fn(
-        &mut dyn Lexer<Token = Token, Context = Context>,
+        &mut (dyn Lexer<Token = Token, Context = Context> + 'lexer),
     ) -> Result<Token, Element>,
     has_element: impl Fn(&mut dyn Lexer<Token = Token, Context = Context>) -> bool,
-    lexer: &mut dyn Lexer<Token = Token, Context = Context>,
+    lexer: &mut (dyn Lexer<Token = Token, Context = Context> + 'lexer),
     context: Context,
     separator: <Token as crate::Token>::Type,
 ) -> Result<Token, Vec<Element>> {
