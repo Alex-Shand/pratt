@@ -88,7 +88,7 @@ impl<T: Token + std::fmt::Debug, Context: Copy, Ast> Table<T, Context, Ast> {
     /// The parser will stop consuming tokens when it encounters an infix token
     /// who's binding power is lower than the chosen binding power (e.g the
     /// token binds less strongly than the currently selected binding power and
-    /// should occur higher in the resulting parse tree)
+    /// should occur closer to the root of the resulting parse tree)
     pub fn parse_at(
         &self,
         lexer: &mut dyn Lexer<Token = T, Context = Context>,

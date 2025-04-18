@@ -18,7 +18,7 @@ pub fn separated_list<Token: crate::Token, Context: Copy, Element>(
     let mut result = Vec::new();
     do_while! {
         do {
-            if lexer.peek(context).map_or(true, |token| token.typ() == terminator) {
+            if lexer.peek(context).is_none_or(|token| token.typ() == terminator) {
                 return Ok(result);
             }
             result.push(parse_element(lexer)?);

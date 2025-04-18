@@ -1,4 +1,4 @@
-//! Helpers for handling spans
+//! Parser library
 #![warn(elided_lifetimes_in_paths)]
 #![warn(missing_docs)]
 #![warn(unreachable_pub)]
@@ -15,6 +15,7 @@
 #![allow(clippy::doc_markdown)]
 #![allow(clippy::let_underscore_untyped)]
 #![allow(clippy::similar_names)]
+#![allow(clippy::missing_errors_doc)]
 
 use std::iter::Peekable;
 
@@ -27,6 +28,7 @@ pub mod combinators;
 pub mod lexer;
 mod table;
 
+/// Trait object for [Lexer]
 pub type LexerHandle<'a, Token, Context> =
     dyn Lexer<Token = Token, Context = Context> + 'a;
 
