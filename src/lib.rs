@@ -19,14 +19,30 @@
 
 use std::iter::Peekable;
 
+#[doc(hidden)]
+pub use pratt_derive::prototype as prototype_impl;
 pub use pratt_derive::{Token, free, infix, prefix};
 pub use span;
 use span::Span;
-pub use table::{Assoc, Result, Table, error::Error};
+#[doc(hidden)]
+pub use table::Assoc;
+pub use table::{Result, Table, error::Error};
 
 pub mod combinators;
 pub mod lexer;
 mod table;
+
+/// Implement prototype forwarding between two types. This is necessary to use
+/// one type as a matcher in pratt utility macros for a different token type.
+#[macro_export]
+macro_rules! prototype {
+    ($target:ty, $prototype:ty, $expr:expr) => {
+        $crate::prototype_impl!(
+            crate = $crate,
+            args = ($target, $prototype, $expr)
+        );
+    };
+}
 
 /// Trait object for [Lexer]
 pub type LexerHandle<'a, Token, Context> =
@@ -35,9 +51,9 @@ pub type LexerHandle<'a, Token, Context> =
 /// Interface for tokens processed by the parser
 ///
 /// # Example
-/// ```rust,ignore
+/// ```rust
 /// # use pratt::Token as _;
-/// use span::{Span, LineAndColumn};
+/// use span::{Span, Chars};
 ///
 /// #[derive(pratt::Token)]
 /// #[pratt(crate = pratt)]
@@ -54,12 +70,12 @@ pub type LexerHandle<'a, Token, Context> =
 /// assert_eq!(Token::Int(5, Span::UNKNOWN).payload().as_str(), "5");
 /// assert_eq!(Token::Blah.payload().as_str(), "???");
 ///
-/// let span = Span {
-///     start: LineAndColumn { line: 0, column: 0 },
-///     end: LineAndColumn { line: 0, column: 0 },
-/// };
+/// let chars = &mut Chars::new("12345");
+/// let start = chars.start_token();
+/// for _ in chars.take(4) {}
+/// let span = chars.end_token(start);
 /// assert_eq!(Token::Int(5, span).span(), span);
-/// assert_eq!(Token::Blah.span(), Span::UNKNOWN);
+/// assert!(Token::Blah.span().is_unknown());
 /// ```
 pub trait Token {
     /// The token type, separate from its payload
@@ -107,32 +123,29 @@ impl<T: Token, I: Iterator<Item = T>> Lexer for Peekable<I> {
     }
 }
 
-#[doc(hidden)]
 /// Used for matching consistency in parsers
-/// TODO: Theomach currently implements this directly, this feels like it should
-/// be implemented by a macro instead
+#[doc(hidden)]
 pub trait Prototypical {
     type Prototype;
     fn prototype(&self) -> &Self::Prototype;
 }
 
-#[doc(hidden)]
 /// Helper so parser macros can call Prototypical::prototype without the trait
 /// in scope
+#[doc(hidden)]
 pub fn prototype<P>(p: &impl Prototypical<Prototype = P>) -> &P {
     p.prototype()
 }
 
 /// Trait for items with spans.
-/// TODO: Why doesn't Token have this as a super trait?
 pub trait Spanned {
     /// Retrieve the entitiy's span, return [Span::UNKNOWN] if the item doesn't
     /// have a valid span
     fn span(&self) -> Span;
 }
 
-#[doc(hidden)]
 /// Helper so parser macros can call Spanned::span without the trait in scope
+#[doc(hidden)]
 pub fn span_of(s: &impl Spanned) -> Span {
     s.span()
 }

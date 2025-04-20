@@ -1,55 +1,22 @@
 //! Parser combinators
 
-use do_while::do_while;
+pub use self::{
+    non_empty_separated_list::{
+        NonEmptySeparatedList, NonEmptySeparatedListBuilder,
+        builders as non_empty_separated_list_builders,
+    },
+    separated_list::{
+        SeparatedList, SeparatedListBuilder,
+        builders as separated_list_builders,
+    },
+};
+use crate::Lexer;
 
-use crate::{Lexer, Result};
+mod non_empty_separated_list;
+mod separated_list;
 
-/// Given a parser for an element construct a new parser which parses a possibly
-/// empty list of elements
-pub fn separated_list<Token: crate::Token, Context: Copy, Element>(
-    parse_element: impl Fn(
-        &mut dyn Lexer<Token = Token, Context = Context>,
-    ) -> Result<Token, Element>,
-    lexer: &mut dyn Lexer<Token = Token, Context = Context>,
-    context: Context,
-    separator: <Token as crate::Token>::Type,
-    terminator: <Token as crate::Token>::Type,
-) -> Result<Token, Vec<Element>> {
-    let mut result = Vec::new();
-    do_while! {
-        do {
-            if lexer.peek(context).is_none_or(|token| token.typ() == terminator) {
-                return Ok(result);
-            }
-            result.push(parse_element(lexer)?);
-        } while check(lexer, context, separator);
-    }
-    Ok(result)
-}
-
-/// Given a parser for an element construct a new parser which parses a
-/// non-empty list of elements
-pub fn non_empty_separated_list<
-    'lexer,
-    Token: crate::Token,
-    Context: Copy,
-    Element,
->(
-    parse_element: impl Fn(
-        &mut (dyn Lexer<Token = Token, Context = Context> + 'lexer),
-    ) -> Result<Token, Element>,
-    has_element: impl Fn(&mut dyn Lexer<Token = Token, Context = Context>) -> bool,
-    lexer: &mut (dyn Lexer<Token = Token, Context = Context> + 'lexer),
-    context: Context,
-    separator: <Token as crate::Token>::Type,
-) -> Result<Token, Vec<Element>> {
-    let mut result = vec![parse_element(lexer)?];
-    while check(lexer, context, separator) && has_element(lexer) {
-        result.push(parse_element(lexer)?);
-    }
-    Ok(result)
-}
-
+/// Peek a token, if it matches the specified type advance the lexer and return
+/// true, otherwise return false. Returns false if there are no tokens available.
 fn check<Token: crate::Token, Context: Copy>(
     tokens: &mut dyn Lexer<Token = Token, Context = Context>,
     context: Context,

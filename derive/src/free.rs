@@ -54,26 +54,26 @@ pub(crate) fn free_impl(
     })
 }
 
-fn validate_args(args: &Punctuated<FnArg, Comma>) -> Result<(&Ident, &Ident)> {
+fn validate_args(
+    args: &Punctuated<FnArg, Comma>,
+) -> Result<(&Ident, Option<&Ident>)> {
     let err = "First argument is expected to be the lexer, second should be the context";
     let mut args_iter = args.iter();
     let (Some(lexer), Some(context)) = (args_iter.next(), args_iter.next())
     else {
         return Err(Error::new_spanned(args, err));
     };
-    let lexer = extract_ident(lexer, err)?;
-    let context = extract_ident(context, err)?;
+    let lexer =
+        extract_ident(lexer).ok_or_else(|| Error::new_spanned(lexer, err))?;
+    let context = extract_ident(context);
     Ok((lexer, context))
 }
 
-fn extract_ident<'a>(arg: &'a FnArg, err: &'static str) -> Result<&'a Ident> {
+fn extract_ident<'a>(arg: &'a FnArg) -> Option<&'a Ident> {
     if let FnArg::Typed(p) = arg {
         if let Pat::Ident(i) = &*p.pat {
-            Ok(&i.ident)
-        } else {
-            Err(Error::new_spanned(arg, err))
+            return Some(&i.ident);
         }
-    } else {
-        Err(Error::new_spanned(arg, err))
     }
+    None
 }

@@ -80,7 +80,7 @@ impl<T: Token + std::fmt::Debug, Context: Copy, Ast> Table<T, Context, Ast> {
         lexer: &mut dyn Lexer<Token = T, Context = Context>,
         context: Context,
     ) -> Result<T, Ast> {
-        self.parse_at(lexer, context, Self::MIN_BIND)
+        self.parse_at_raw(lexer, context, Self::MIN_BIND)
     }
 
     /// Parse a sequence of tokens with respect to a specific binding power
@@ -90,6 +90,15 @@ impl<T: Token + std::fmt::Debug, Context: Copy, Ast> Table<T, Context, Ast> {
     /// token binds less strongly than the currently selected binding power and
     /// should occur closer to the root of the resulting parse tree)
     pub fn parse_at(
+        &self,
+        lexer: &mut dyn Lexer<Token = T, Context = Context>,
+        context: Context,
+        token: T::Type,
+    ) -> Result<T, Ast> {
+        self.parse_at_raw(lexer, context, self.bind_of(token))
+    }
+
+    fn parse_at_raw(
         &self,
         lexer: &mut dyn Lexer<Token = T, Context = Context>,
         context: Context,
@@ -137,8 +146,8 @@ impl<T: Token + std::fmt::Debug, Context: Copy, Ast> Table<T, Context, Ast> {
     ///
     /// This method is only relevant for token types with defined infix parsers
     #[must_use]
-    pub fn bind_of(&self, token: &T::Type) -> u8 {
-        let row = self.row(Some(token));
+    pub fn bind_of(&self, token: T::Type) -> u8 {
+        let row = self.row(Some(&token));
 
         debug_assert!(
             row.infix.is_some(),
@@ -224,61 +233,51 @@ mod tests {
         Atom(char),
     }
 
+    type Table = super::Table<Token, (), Ast>;
+    type Lexer<'a> = crate::LexerHandle<'a, Token, ()>;
+
     #[allow(clippy::unnecessary_wraps)]
-    fn atom(
-        _: &Table<Token, (), Ast>,
-        tokens: &mut dyn Lexer<Token = Token, Context = ()>,
-        (): (),
-    ) -> Result<Token, Ast> {
-        let Some(Token::Atom(c)) = tokens.token(()) else {
-            unreachable!();
-        };
+    #[pratt_derive::prefix]
+    fn atom(_: &Table, tokens: &mut Lexer<'_>, (): ()) -> Result<Token, Ast> {
+        let c = demand!(Token::Atom(c) => *c);
         Ok(Ast::Atom(c))
     }
 
+    #[pratt_derive::infix]
     fn assig(
-        _: &Table<Token, (), Ast>,
-        lexer: &mut dyn Lexer<Token = Token, Context = ()>,
+        table: &Table,
+        lexer: &mut Lexer<'_>,
         (): (),
         lhs: Ast,
     ) -> Result<Token, Ast> {
-        let Some(Token::Assig) = lexer.token(()) else {
-            unreachable!();
-        };
-        Ok(Ast::Assig(
-            Box::new(lhs),
-            Box::new(TABLE.parse_at(
-                lexer,
-                (),
-                TABLE.bind_of(&Token::Assig.typ()),
-            )?),
-        ))
+        demand!(Token::Assig);
+        let rhs = table.parse_at(lexer, (), Token::Assig.typ())?;
+        Ok(Ast::Assig(Box::new(lhs), Box::new(rhs)))
     }
 
+    #[pratt_derive::infix]
     fn op(
-        table: &Table<Token, (), Ast>,
-        lexer: &mut dyn Lexer<Token = Token, Context = ()>,
+        table: &Table,
+        lexer: &mut Lexer<'_>,
         (): (),
         lhs: Ast,
     ) -> Result<Token, Ast> {
-        let Some(tok) = lexer.token(()) else {
-            unreachable!();
-        };
+        let tok =
+            demand!(tok@(Token::Add|Token::Sub|Token::Div|Token::Mul) => *tok);
         let op = tok.payload().chars().next().unwrap();
-        let bind = table.bind_of(&tok.typ());
-        let rhs = table.parse_at(lexer, (), bind)?;
+        let rhs = table.parse_at(lexer, (), tok.typ())?;
         Ok(Ast::BinOp(op, Box::new(lhs), Box::new(rhs)))
     }
 
     fn always_fails(
-        _: &Table<Token, (), Ast>,
-        _: &mut dyn Lexer<Token = Token, Context = ()>,
+        _: &Table,
+        _: &mut Lexer<'_>,
         (): (),
     ) -> Result<Token, Ast> {
         Err(Error::Custom("Custom Error".into()))
     }
 
-    static TABLE: LazyLock<Table<Token, (), Ast>> = LazyLock::new(|| {
+    static TABLE: LazyLock<Table> = LazyLock::new(|| {
         crate::pratt! {
             Assig =>  [     , assig, R,     _ ];
             Add   =>  [     ,    op, L,  PLUS ];
@@ -291,7 +290,7 @@ mod tests {
     });
 
     #[test]
-    fn parse_success() {
+    fn parse_success() -> Result<Token, ()> {
         let mut tokens = {
             use self::Token::*;
             // a  + b - c * d  / e
@@ -310,7 +309,7 @@ mod tests {
             .peekable()
         };
 
-        let result = TABLE.parse(&mut tokens, ());
+        let result = TABLE.parse(&mut tokens, ())?;
 
         let expected = Ast::BinOp(
             '-',
@@ -329,13 +328,15 @@ mod tests {
                 Box::new(Ast::Atom('e')),
             )),
         );
-        assert!(result.is_ok());
-        assert_eq!(expected, result.unwrap());
+
+        assert_eq!(expected, result);
         assert!(tokens.collect::<Vec<_>>().is_empty());
+
+        Ok(())
     }
 
     #[test]
-    fn precedence() {
+    fn precedence() -> Result<Token, ()> {
         let mut tokens = {
             use self::Token::*;
             //         a     *         b     -         c
@@ -344,7 +345,7 @@ mod tests {
                 .peekable()
         };
 
-        let result = TABLE.parse(&mut tokens, ());
+        let result = TABLE.parse(&mut tokens, ())?;
 
         let expected = Ast::BinOp(
             '-',
@@ -355,13 +356,15 @@ mod tests {
             )),
             Box::new(Ast::Atom('c')),
         );
-        assert!(result.is_ok());
-        assert_eq!(expected, result.unwrap());
+
+        assert_eq!(expected, result);
         assert!(tokens.collect::<Vec<_>>().is_empty());
+
+        Ok(())
     }
 
     #[test]
-    fn left_associativity() {
+    fn left_associativity() -> Result<Token, ()> {
         let mut tokens = {
             use self::Token::*;
             //         a     +         b     +         c
@@ -370,7 +373,7 @@ mod tests {
                 .peekable()
         };
 
-        let result = TABLE.parse(&mut tokens, ());
+        let result = TABLE.parse(&mut tokens, ())?;
 
         let expected = Ast::BinOp(
             '+',
@@ -381,13 +384,15 @@ mod tests {
             )),
             Box::new(Ast::Atom('c')),
         );
-        assert!(result.is_ok());
-        assert_eq!(expected, result.unwrap());
+
+        assert_eq!(expected, result);
         assert!(tokens.collect::<Vec<_>>().is_empty());
+
+        Ok(())
     }
 
     #[test]
-    fn right_associativity() {
+    fn right_associativity() -> Result<Token, ()> {
         let mut tokens = {
             use self::Token::*;
             //         a      =          b      =          c
@@ -396,7 +401,7 @@ mod tests {
                 .peekable()
         };
 
-        let result = TABLE.parse(&mut tokens, ());
+        let result = TABLE.parse(&mut tokens, ())?;
 
         let expected = Ast::Assig(
             Box::new(Ast::Atom('a')),
@@ -405,13 +410,15 @@ mod tests {
                 Box::new(Ast::Atom('c')),
             )),
         );
-        assert!(result.is_ok());
-        assert_eq!(expected, result.unwrap());
+
+        assert_eq!(expected, result);
         assert!(tokens.collect::<Vec<_>>().is_empty());
+
+        Ok(())
     }
 
     #[test]
-    fn parser_has_no_semantic_awareness() {
+    fn parser_has_no_semantic_awareness() -> Result<Token, ()> {
         let mut tokens = {
             use self::Token::*;
             //         a     +         b      =          c
@@ -420,7 +427,7 @@ mod tests {
                 .peekable()
         };
 
-        let result = TABLE.parse(&mut tokens, ());
+        let result = TABLE.parse(&mut tokens, ())?;
 
         let expected = Ast::Assig(
             Box::new(Ast::BinOp(
@@ -430,13 +437,15 @@ mod tests {
             )),
             Box::new(Ast::Atom('c')),
         );
-        assert!(result.is_ok());
-        assert_eq!(expected, result.unwrap());
+
+        assert_eq!(expected, result);
         assert!(tokens.collect::<Vec<_>>().is_empty());
+
+        Ok(())
     }
 
     #[test]
-    fn parse_at() {
+    fn parse_at() -> Result<Token, ()> {
         let tokens = {
             use self::Token::*;
             //         a     *         b     +         c      =          d
@@ -450,11 +459,7 @@ mod tests {
             // parse a second multiplication for the rhs
             let mut tokens = tokens.clone().into_iter().peekable();
 
-            let result = TABLE.parse_at(
-                &mut tokens,
-                (),
-                TABLE.bind_of(&Token::Mul.typ()),
-            );
+            let result = TABLE.parse_at(&mut tokens, (), Token::Mul.typ())?;
 
             let expected = Ast::Atom('a');
             let remainder = {
@@ -462,8 +467,7 @@ mod tests {
                 vec![Mul, Atom('b'), Add, Atom('c'), Assig, Atom('d')]
             };
 
-            assert!(result.is_ok());
-            assert_eq!(expected, result.unwrap());
+            assert_eq!(expected, result);
             assert_eq!(remainder, tokens.collect::<Vec<_>>());
         }
 
@@ -474,11 +478,7 @@ mod tests {
             // shouldn't be consumed
             let mut tokens = tokens.clone().into_iter().peekable();
 
-            let result = TABLE.parse_at(
-                &mut tokens,
-                (),
-                TABLE.bind_of(&Token::Add.typ()),
-            );
+            let result = TABLE.parse_at(&mut tokens, (), Token::Add.typ())?;
 
             let expected = Ast::BinOp(
                 '*',
@@ -490,8 +490,7 @@ mod tests {
                 vec![Add, Atom('c'), Assig, Atom('d')]
             };
 
-            assert!(result.is_ok());
-            assert_eq!(expected, result.unwrap());
+            assert_eq!(expected, result);
             assert_eq!(remainder, tokens.collect::<Vec<_>>());
         }
 
@@ -502,11 +501,7 @@ mod tests {
             // ignoring semantic sensibility)
             let mut tokens = tokens.clone().into_iter().peekable();
 
-            let result = TABLE.parse_at(
-                &mut tokens,
-                (),
-                TABLE.bind_of(&Token::Assig.typ()),
-            );
+            let result = TABLE.parse_at(&mut tokens, (), Token::Assig.typ())?;
 
             let expected = Ast::Assig(
                 Box::new(Ast::BinOp(
@@ -521,10 +516,11 @@ mod tests {
                 Box::new(Ast::Atom('d')),
             );
 
-            assert!(result.is_ok());
-            assert_eq!(expected, result.unwrap());
+            assert_eq!(expected, result);
             assert!(tokens.collect::<Vec<_>>().is_empty());
         }
+
+        Ok(())
     }
 
     #[test]

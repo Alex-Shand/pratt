@@ -54,7 +54,9 @@ pub(crate) fn infix_impl(
     })
 }
 
-fn validate_args(args: &Punctuated<FnArg, Comma>) -> Result<(&Ident, &Ident)> {
+fn validate_args(
+    args: &Punctuated<FnArg, Comma>,
+) -> Result<(&Ident, Option<&Ident>)> {
     let err = "Infix parser should have exactly four non-self arguments";
     let mut args_iter = args.iter();
     let (Some(_), Some(lexer), Some(context), Some(_), None) = (
@@ -66,19 +68,17 @@ fn validate_args(args: &Punctuated<FnArg, Comma>) -> Result<(&Ident, &Ident)> {
     ) else {
         return Err(Error::new_spanned(args, err));
     };
-    let lexer = extract_ident(lexer, err)?;
-    let context = extract_ident(context, err)?;
+    let lexer =
+        extract_ident(lexer).ok_or_else(|| Error::new_spanned(lexer, err))?;
+    let context = extract_ident(context);
     Ok((lexer, context))
 }
 
-fn extract_ident<'a>(arg: &'a FnArg, err: &'static str) -> Result<&'a Ident> {
+fn extract_ident<'a>(arg: &'a FnArg) -> Option<&'a Ident> {
     if let FnArg::Typed(p) = arg {
         if let Pat::Ident(i) = &*p.pat {
-            Ok(&i.ident)
-        } else {
-            Err(Error::new_spanned(arg, err))
+            return Some(&i.ident);
         }
-    } else {
-        Err(Error::new_spanned(arg, err))
     }
+    None
 }

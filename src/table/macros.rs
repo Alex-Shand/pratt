@@ -41,6 +41,9 @@ macro_rules! assoc {
 
 /// Used to construct the pratt table
 ///
+/// The token type being operated on is expected to be in scope with the name
+/// Token
+///
 /// Format of each row is TokenType => [ prefix, infix, assoc, bind ];
 ///
 /// Allowed assoc values are L (left associative), R/_ (right associative)
@@ -82,6 +85,6 @@ macro_rules! pratt {
                 $($bind)+
             );
         )*
-            table
+        table
     } }
 }

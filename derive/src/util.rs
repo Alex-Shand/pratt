@@ -5,8 +5,9 @@ use syn::Ident;
 pub(crate) fn generate(
     pratt: &TokenStream,
     lexer: &Ident,
-    context: &Ident,
+    context: Option<&Ident>,
 ) -> TokenStream {
+    let context = context.map_or_else(|| quote!(()), |i| quote!(#i));
     quote! {
         let mut __pratt_internal_latest_span = #pratt::span::Span::UNKNOWN;
         let mut __pratt_internal_spans: ::std::vec::Vec<#pratt::span::Span> = ::std::vec::Vec::new();

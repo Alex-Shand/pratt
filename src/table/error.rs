@@ -4,27 +4,29 @@ use crate::Token;
 /// [Table::parse_at](super::Table::parse_at)
 ///
 /// # Example
-/// ```rust,ignore
+/// ```rust
 /// # use pratt::Error;
-/// use span::{ Span, LineAndColumn };
+/// use span::{ Span, Chars };
 ///
-/// static SPAN: Span = Span {
-///     start: LineAndColumn { line: 0, column: 0 },
-///     end: LineAndColumn { line: 0, column: 3 }
-/// };
+/// fn span() -> Span {
+///     let chars = &mut Chars::new("123456");
+///     let start = chars.start_token();
+///     for _ in chars.take(4) {}
+///     chars.end_token(start)
+/// }
 ///
 /// #[derive(pratt::Token)]
 /// #[pratt(crate = pratt)]
 /// enum Token {
-///     #[pratt(payload = "Test", span = SPAN)]
+///     #[pratt(payload = "Test", span = span())]
 ///     Test
 /// }
 ///
 /// let errors = [
 ///     (Error::UnexpectedEOF(None), "Unexpected EOF"),
 ///     (Error::UnexpectedEOF(Some(String::from("Some message"))), "Unexpected EOF. Some message"),
-///     (Error::UnexpectedToken(Token::Test, None), "Unexpected token `Test` at line 0 column 0"),
-///     (Error::UnexpectedToken(Token::Test, Some(String::from("Some message"))), "Unexpected token `Test` at line 0 column 0. Some message"),
+///     (Error::UnexpectedToken(Token::Test, None), "Unexpected token `Test` at line 1 column 1"),
+///     (Error::UnexpectedToken(Token::Test, Some(String::from("Some message"))), "Unexpected token `Test` at line 1 column 1. Some message"),
 ///     (Error::Custom("Custom Error".into()), "Custom Error")
 /// ];
 ///

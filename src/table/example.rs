@@ -6,7 +6,7 @@ use std::iter::Peekable;
 use pratt::Result;
 use span::Span;
 
-#[derive(Debug, pratt::Token)]
+#[derive(Debug, Copy, Clone, pratt::Token)]
 #[pratt(crate = pratt)]
 enum Token {
     #[pratt(payload = *it.0)]
@@ -27,29 +27,29 @@ enum Ast {
     Atom(char)
 }
 
+type Table = pratt::Table<Token, (), Ast>;
+type Lexer<'a> = pratt::LexerHandle<'a, Token, ()>;
+
+#[pratt::prefix(crate = pratt)]
 fn atom(
-    _: &pratt::Table<Token, (), Ast>,
-    tokens: &mut dyn pratt::Lexer<Token = Token, Context = ()>,
+    _: &Table,
+    tokens: &mut Lexer<'_>,
     (): (),
 ) -> Result<Token, Ast> {
-    let Some(Token::Atom(c)) = tokens.token(()) else {
-        unreachable!();
-    };
+    let c = demand!(Token::Atom(c) => *c);
     Ok(Ast::Atom(c))
 }
 
+#[pratt::infix(crate = pratt)]
 fn op(
-    table: &pratt::Table<Token, (), Ast>,
-    tokens: &mut dyn pratt::Lexer<Token = Token, Context = ()>,
+    table: &Table,
+    tokens: &mut Lexer<'_>,
     (): (),
     lhs: Ast
 ) -> Result<Token, Ast> {
-    let Some(tok) = tokens.token(()) else {
-        unreachable!();
-    };
+    let tok = demand!(tok@(Token::Add|Token::Sub|Token::Mul|Token::Div) => *tok);
     let op = tok.payload().chars().next().unwrap();
-    let bind = table.bind_of(&tok.typ());
-    let rhs = table.parse_at(tokens, (), bind)?;
+    let rhs = table.parse_at(tokens, (), tok.typ())?;
     Ok(Ast::BinOp(op, Box::new(lhs), Box::new(rhs)))
 }
 

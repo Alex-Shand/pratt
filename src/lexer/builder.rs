@@ -11,13 +11,13 @@ use crate::{Lexer, Token};
 pub struct Builder<C: Copy>(pub(super) PhantomData<C>);
 
 impl<C: Copy> Builder<C> {
-    /// Add state
+    /// Add a state type to the generated lexer
     #[must_use]
     pub fn with_state<S: Default>(self) -> BuilderWithState<C, S> {
         BuilderWithState(PhantomData, PhantomData)
     }
 
-    /// .
+    /// Build a lexer from a function which returns one token at a time
     pub fn with_token_fn<T: Token>(
         self,
         token_fn: fn(&mut Chars, C) -> Option<T>,
@@ -25,7 +25,7 @@ impl<C: Copy> Builder<C> {
         StatelessLexerSingleTokenBuilder(token_fn)
     }
 
-    /// .
+    /// Build a lexer from a function which may return multiple tokens at once
     pub fn with_tokens_fn<T: Token>(
         self,
         tokens_fn: fn(&mut Chars, C) -> Vec<T>,
@@ -42,7 +42,7 @@ pub struct BuilderWithState<C: Copy, S: Default>(
 );
 
 impl<C: Copy, S: Default> BuilderWithState<C, S> {
-    /// .
+    /// Build a lexer from a function which returns one token at a time
     pub fn with_token_fn<T: Token>(
         self,
         token_fn: fn(&mut Chars, C, &mut S) -> Option<T>,
@@ -50,7 +50,7 @@ impl<C: Copy, S: Default> BuilderWithState<C, S> {
         StatefullLexerSingleTokenBuilder(token_fn)
     }
 
-    /// .
+    /// Build a lexer from a function which may return multiple tokens at once
     pub fn with_tokens_fn<T: Token>(
         self,
         tokens_fn: fn(&mut Chars, C, &mut S) -> Vec<T>,
@@ -66,7 +66,7 @@ pub struct StatelessLexerSingleTokenBuilder<C: Copy, T: Token>(
 );
 
 impl<C: Copy, T: Token> StatelessLexerSingleTokenBuilder<C, T> {
-    /// .
+    /// Build the lexer
     pub fn build(
         self,
         str: impl Into<String>,
@@ -94,8 +94,7 @@ impl<C: Copy, T: Token> StatelessLexerSingleTokenBuilder<C, T> {
                     self.finished = true;
                     return None;
                 }
-                self.token = token;
-                self.token(context)
+                token
             }
 
             fn peek(&mut self, context: Self::Context) -> Option<&Self::Token> {
@@ -123,7 +122,7 @@ pub struct StatelessLexerMultiTokenBuilder<C: Copy, T: Token>(
 );
 
 impl<C: Copy, T: Token> StatelessLexerMultiTokenBuilder<C, T> {
-    /// .
+    /// Build the lexer
     pub fn build(
         self,
         str: impl Into<String>,
@@ -181,7 +180,7 @@ pub struct StatefullLexerSingleTokenBuilder<C: Copy, S: Default, T: Token>(
 );
 
 impl<C: Copy, S: Default, T: Token> StatefullLexerSingleTokenBuilder<C, S, T> {
-    /// .
+    /// Build the lexer
     pub fn build(
         self,
         str: impl Into<String>,
@@ -211,8 +210,7 @@ impl<C: Copy, S: Default, T: Token> StatefullLexerSingleTokenBuilder<C, S, T> {
                     self.finished = true;
                     return None;
                 }
-                self.token = token;
-                self.token(context)
+                token
             }
 
             fn peek(&mut self, context: Self::Context) -> Option<&Self::Token> {
@@ -241,7 +239,7 @@ pub struct StatefullLexerMultiTokenBuilder<C: Copy, S: Default, T: Token>(
 );
 
 impl<C: Copy, S: Default, T: Token> StatefullLexerMultiTokenBuilder<C, S, T> {
-    /// .
+    /// Build the lexer
     pub fn build(
         self,
         str: impl Into<String>,

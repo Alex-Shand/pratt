@@ -16,12 +16,14 @@
 #![allow(clippy::doc_markdown)]
 #![allow(clippy::let_underscore_untyped)]
 
+use proc::util::CrateAnd;
 use proc_macro_crate::{crate_name, FoundCrate};
 
 mod derive_token;
 mod free;
 mod infix;
 mod prefix;
+mod prototype;
 mod util;
 
 /// Derive macro for pratt::Token
@@ -83,6 +85,15 @@ pub fn free(
     free::free_impl(args, syn::parse_macro_input!(input as syn::ItemFn))
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
+}
+
+// Documented in the wrapper in pratt
+#[allow(missing_docs)]
+#[proc::function]
+pub fn prototype(
+    CrateAnd { crate_, args }: CrateAnd<prototype::Input>,
+) -> proc::Result<prototype::Prototype> {
+    prototype::Prototype::new(crate_, args)
 }
 
 fn name() -> syn::Result<proc_macro2::TokenStream> {
