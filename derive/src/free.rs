@@ -1,79 +1,70 @@
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens as _};
+use quote::{quote, ToTokens};
 use syn::{
-    punctuated::Punctuated, token::Comma, Error, FnArg, Ident, ItemFn, Pat,
-    Result,
+    punctuated::Punctuated, token::Comma, Attribute, Block, Error, FnArg,
+    Ident, ItemFn, Path, Result, Signature, Visibility,
 };
 
-use crate::util;
+use crate::utils::{self, extract_ident, require_lexer_ident};
 
-#[derive(Debug, Default)]
-pub(crate) struct Args {
-    pratt: Option<TokenStream>,
+pub(crate) struct Free {
+    attrs: Vec<Attribute>,
+    vis: Visibility,
+    sig: Signature,
+    utils: TokenStream,
+    body: Block,
 }
 
-impl Args {
-    pub(crate) fn parse(
-        &mut self,
-        meta: &syn::meta::ParseNestedMeta<'_>,
-    ) -> Result<()> {
-        if meta.path.is_ident("crate") {
-            let value = meta.value()?;
-            let pratt: Ident = value.parse()?;
-            self.pratt = Some(pratt.into_token_stream());
-            return Ok(());
-        }
-        Err(Error::new_spanned(
-            meta.input.parse::<TokenStream>()?,
-            "Unrecognised pratt argument",
-        ))
+impl Free {
+    pub(crate) fn new(
+        crate_: Path,
+        ItemFn {
+            attrs,
+            vis,
+            sig,
+            block,
+        }: ItemFn,
+    ) -> Result<Self> {
+        let (lexer, context) = Self::validate_args(&sig.inputs)?;
+        let utils = utils::generate(&crate_, lexer, context);
+        Ok(Self {
+            attrs,
+            vis,
+            sig,
+            utils,
+            body: *block,
+        })
+    }
+
+    fn validate_args(
+        args: &Punctuated<FnArg, Comma>,
+    ) -> Result<(&Ident, Option<&Ident>)> {
+        let mut args_iter = args.iter();
+        let (Some(lexer), Some(context)) = (args_iter.next(), args_iter.next())
+        else {
+            return Err(Error::new_spanned(args, "First argument is expected to be the lexer, second should be the context"));
+        };
+        let lexer = require_lexer_ident(lexer)?;
+        let context = extract_ident(context);
+        Ok((lexer, context))
     }
 }
 
-pub(crate) fn free_impl(
-    Args { pratt }: Args,
-    input: ItemFn,
-) -> Result<TokenStream> {
-    let pratt = if let Some(pratt) = pratt {
-        pratt
-    } else {
-        super::name()?
-    };
-    let (lexer, context) = validate_args(&input.sig.inputs)?;
-    let attrs = &input.attrs;
-    let vis = &input.vis;
-    let sig = &input.sig;
-    let body = &input.block;
-    let utils = util::generate(&pratt, lexer, context);
-    Ok(quote! {
-        #(#attrs)*
-        #vis #sig {
-            #utils
-            #body
-        }
-    })
-}
-
-fn validate_args(
-    args: &Punctuated<FnArg, Comma>,
-) -> Result<(&Ident, Option<&Ident>)> {
-    let err = "First argument is expected to be the lexer, second should be the context";
-    let mut args_iter = args.iter();
-    let (Some(lexer), Some(context)) = (args_iter.next(), args_iter.next())
-    else {
-        return Err(Error::new_spanned(args, err));
-    };
-    let lexer =
-        extract_ident(lexer).ok_or_else(|| Error::new_spanned(lexer, err))?;
-    let context = extract_ident(context);
-    Ok((lexer, context))
-}
-
-fn extract_ident<'a>(arg: &'a FnArg) -> Option<&'a Ident> {
-    if let FnArg::Typed(p) = arg {
-        if let Pat::Ident(i) = &*p.pat {
-            return Some(&i.ident);
-        }
+impl ToTokens for Free {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let Free {
+            attrs,
+            vis,
+            sig,
+            utils,
+            body,
+        } = self;
+        tokens.extend(quote! {
+            #(#attrs)*
+            #vis #sig {
+                #utils
+                #body
+            }
+        });
     }
-    None
 }

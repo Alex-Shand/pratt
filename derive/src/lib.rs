@@ -24,7 +24,7 @@ mod free;
 mod infix;
 mod prefix;
 mod prototype;
-mod util;
+mod utils;
 
 /// Derive macro for pratt::Token
 #[proc::derive(name = Token, attribute = pratt, host = "pratt")]
@@ -70,20 +70,12 @@ pub fn infix(
 }
 
 /// Provide pratt parsing utilities with minimal requirements
-#[proc_macro_attribute]
+#[proc::attribute(host = "pratt")]
 pub fn free(
-    args: proc_macro::TokenStream,
-    input: proc_macro::TokenStream,
-) -> proc_macro::TokenStream {
-    let args = {
-        let mut parsed = free::Args::default();
-        let parser = syn::meta::parser(|meta| parsed.parse(&meta));
-        syn::parse_macro_input!(args with parser);
-        parsed
-    };
-    free::free_impl(args, syn::parse_macro_input!(input as syn::ItemFn))
-        .unwrap_or_else(syn::Error::into_compile_error)
-        .into()
+    crate_: proc::Path,
+    input: syn::ItemFn,
+) -> proc::Result<free::Free> {
+    free::Free::new(crate_, input)
 }
 
 // Documented in the wrapper in pratt

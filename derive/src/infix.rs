@@ -5,7 +5,7 @@ use syn::{
     Result,
 };
 
-use crate::util;
+use crate::utils;
 
 #[derive(Debug, Default)]
 pub(crate) struct Args {
@@ -44,7 +44,7 @@ pub(crate) fn infix_impl(
     let vis = &input.vis;
     let sig = &input.sig;
     let body = &input.block;
-    let utils = util::generate(&pratt, lexer, context);
+    let utils = utils::generate(&syn::parse_quote!(#pratt), lexer, context);
     Ok(quote! {
         #(#attrs)*
         #vis #sig {

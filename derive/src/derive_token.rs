@@ -10,8 +10,6 @@ use syn::{
     parse_quote, Error, Expr, Fields, Ident, ItemEnum, Path, Result, Visibility,
 };
 
-unzip_n::unzip_n!(3);
-
 pub(crate) struct DeriveToken {
     crate_: Path,
     vis: Visibility,

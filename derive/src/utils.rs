@@ -1,29 +1,29 @@
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::Ident;
+use syn::{Error, FnArg, Ident, Pat, Path, Result};
 
 pub(crate) fn generate(
-    pratt: &TokenStream,
+    crate_: &Path,
     lexer: &Ident,
     context: Option<&Ident>,
 ) -> TokenStream {
     let context = context.map_or_else(|| quote!(()), |i| quote!(#i));
     quote! {
-        let mut __pratt_internal_latest_span = #pratt::span::Span::UNKNOWN;
-        let mut __pratt_internal_spans: ::std::vec::Vec<#pratt::span::Span> = ::std::vec::Vec::new();
+        let mut __pratt_internal_latest_span = #crate_::span::Span::UNKNOWN;
+        let mut __pratt_internal_spans: ::std::vec::Vec<#crate_::span::Span> = ::std::vec::Vec::new();
 
         #[allow(unused_macros)]
         macro_rules! require {
             ($pat:pat => $body:expr, $context:expr, $err:expr) => {
                 if let ::std::option::Option::Some(token) = #lexer.token($context) {
-                    if let $pat = #pratt::prototype(&token) {
-                        let _ = add_span!(#pratt::span_of(&token));
+                    if let $pat = #crate_::prototype(&token) {
+                        let _ = add_span!(#crate_::span_of(&token));
                         $body
                     } else {
-                        return Err(#pratt::Error::UnexpectedToken(token, Some(String::from($err))));
+                        return Err(#crate_::Error::UnexpectedToken(token, Some(String::from($err))));
                     }
                 } else {
-                    return Err(#pratt::Error::UnexpectedEOF(Some(String::from($err))));
+                    return Err(#crate_::Error::UnexpectedEOF(Some(String::from($err))));
                 }
             };
             ($pat:pat, $context:expr, $err:expr) => {
@@ -57,7 +57,7 @@ pub(crate) fn generate(
         macro_rules! check {
             ($pat:pat, $context:expr) => {
                 if let ::std::option::Option::Some(token) = #lexer.peek($context) {
-                    if let $pat = #pratt::prototype(token) {
+                    if let $pat = #crate_::prototype(token) {
                         true
                     } else {
                         false
@@ -78,13 +78,13 @@ pub(crate) fn generate(
 
         #[allow(unused_macros)]
         macro_rules! span {
-            () => { #pratt::span::Span::aggregate(__pratt_internal_spans.as_slice()) }
+            () => { #crate_::span::Span::aggregate(__pratt_internal_spans.as_slice()) }
         }
 
         #[allow(unused_macros)]
         macro_rules! add_span {
             ($spanned:expr) => { {
-                use #pratt::Spanned as _;
+                use #crate_::Spanned as _;
                 let __pratt_internal_temp = $spanned;
                 __pratt_internal_latest_span = __pratt_internal_temp.span();
                 __pratt_internal_spans.push(__pratt_internal_latest_span);
@@ -99,4 +99,19 @@ pub(crate) fn generate(
             }
         }
     }
+}
+
+pub(crate) fn extract_ident<'a>(arg: &'a FnArg) -> Option<&'a Ident> {
+    if let FnArg::Typed(p) = arg {
+        if let Pat::Ident(i) = &*p.pat {
+            return Some(&i.ident);
+        }
+    }
+    None
+}
+
+pub(crate) fn require_lexer_ident<'a>(arg: &'a FnArg) -> Result<&'a Ident> {
+    extract_ident(arg).ok_or_else(|| {
+        Error::new_spanned(arg, "The lexer argument must be named")
+    })
 }
