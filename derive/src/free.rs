@@ -1,8 +1,10 @@
-use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
-use syn::{
-    punctuated::Punctuated, token::Comma, Attribute, Block, Error, FnArg,
-    Ident, ItemFn, Path, Result, Signature, Visibility,
+use proc::{
+    quote::{quote, ToTokens},
+    syn::{
+        punctuated::Punctuated, token::Comma, Attribute, Block, Error, FnArg,
+        Ident, Signature, Visibility,
+    },
+    ItemFn, Path, Result, TokenStream,
 };
 
 use crate::utils;

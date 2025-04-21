@@ -1,6 +1,8 @@
-use proc_macro2::TokenStream;
-use quote::quote;
-use syn::{Error, FnArg, Ident, Pat, Path, Result};
+use proc::{
+    quote::quote,
+    syn::{Error, FnArg, Ident, Pat},
+    Path, Result, TokenStream,
+};
 
 pub(crate) fn generate(
     crate_: &Path,

@@ -2,12 +2,10 @@ use std::mem;
 
 use proc::{
     meta::{Optional, Required},
+    quote::{quote, ToTokens},
+    syn::{parse_quote, Error, Expr, Fields, Ident, Visibility},
     util::{field_names_and_types, EnumFieldMatcher},
-};
-use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
-use syn::{
-    parse_quote, Error, Expr, Fields, Ident, ItemEnum, Path, Result, Visibility,
+    ItemEnum, Path, Result, TokenStream,
 };
 
 pub(crate) struct DeriveToken {
@@ -85,11 +83,11 @@ struct Variant {
     payload: Expr,
     span: Expr,
     fields: Fields,
-    variant: syn::Variant,
+    variant: proc::syn::Variant,
 }
 
 impl Variant {
-    fn new(crate_: &Path, mut variant: syn::Variant) -> Result<Self> {
+    fn new(crate_: &Path, mut variant: proc::syn::Variant) -> Result<Self> {
         let attrs = mem::take(&mut variant.attrs);
         let parser: (Required<Expr>, Optional<Expr>) =
             (Required::new("payload"), Optional::new("span"));

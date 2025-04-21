@@ -1,84 +1,80 @@
-use proc_macro2::TokenStream;
-use quote::{quote, ToTokens as _};
-use syn::{
-    punctuated::Punctuated, token::Comma, Error, FnArg, Ident, ItemFn, Pat,
-    Result,
+use proc::{
+    quote::{quote, ToTokens},
+    syn::{
+        punctuated::Punctuated, token::Comma, Attribute, Block, Error, FnArg,
+        Ident, Signature, Visibility,
+    },
+    ItemFn, Path, Result, TokenStream,
 };
 
 use crate::utils;
 
-#[derive(Debug, Default)]
-pub(crate) struct Args {
-    pratt: Option<TokenStream>,
+pub(crate) struct Infix {
+    attrs: Vec<Attribute>,
+    vis: Visibility,
+    sig: Signature,
+    utils: TokenStream,
+    body: Block,
 }
 
-impl Args {
-    pub(crate) fn parse(
-        &mut self,
-        meta: &syn::meta::ParseNestedMeta<'_>,
-    ) -> Result<()> {
-        if meta.path.is_ident("crate") {
-            let value = meta.value()?;
-            let pratt: Ident = value.parse()?;
-            self.pratt = Some(pratt.into_token_stream());
-            return Ok(());
-        }
-        Err(Error::new_spanned(
-            meta.input.parse::<TokenStream>()?,
-            "Unrecognised pratt argument",
-        ))
+impl Infix {
+    pub(crate) fn new(
+        crate_: Path,
+        ItemFn {
+            attrs,
+            vis,
+            sig,
+            block,
+        }: ItemFn,
+    ) -> Result<Self> {
+        let (lexer, context) = Self::validate_args(&sig.inputs)?;
+        let utils = utils::generate(&crate_, lexer, context);
+        Ok(Self {
+            attrs,
+            vis,
+            sig,
+            utils,
+            body: *block,
+        })
+    }
+
+    fn validate_args(
+        args: &Punctuated<FnArg, Comma>,
+    ) -> Result<(&Ident, Option<&Ident>)> {
+        let mut args_iter = args.iter();
+        let (Some(_), Some(lexer), Some(context), Some(_), None) = (
+            args_iter.next(),
+            args_iter.next(),
+            args_iter.next(),
+            args_iter.next(),
+            args_iter.next(),
+        ) else {
+            return Err(Error::new_spanned(
+                args,
+                "Infix parser should have exactly four non-self arguments",
+            ));
+        };
+        let lexer = utils::require_lexer_ident(lexer)?;
+        let context = utils::extract_ident(context);
+        Ok((lexer, context))
     }
 }
 
-pub(crate) fn infix_impl(
-    Args { pratt }: Args,
-    input: ItemFn,
-) -> Result<TokenStream> {
-    let pratt = if let Some(pratt) = pratt {
-        pratt
-    } else {
-        super::name()?
-    };
-    let (lexer, context) = validate_args(&input.sig.inputs)?;
-    let attrs = &input.attrs;
-    let vis = &input.vis;
-    let sig = &input.sig;
-    let body = &input.block;
-    let utils = utils::generate(&syn::parse_quote!(#pratt), lexer, context);
-    Ok(quote! {
-        #(#attrs)*
-        #vis #sig {
-            #utils
-            #body
-        }
-    })
-}
-
-fn validate_args(
-    args: &Punctuated<FnArg, Comma>,
-) -> Result<(&Ident, Option<&Ident>)> {
-    let err = "Infix parser should have exactly four non-self arguments";
-    let mut args_iter = args.iter();
-    let (Some(_), Some(lexer), Some(context), Some(_), None) = (
-        args_iter.next(),
-        args_iter.next(),
-        args_iter.next(),
-        args_iter.next(),
-        args_iter.next(),
-    ) else {
-        return Err(Error::new_spanned(args, err));
-    };
-    let lexer =
-        extract_ident(lexer).ok_or_else(|| Error::new_spanned(lexer, err))?;
-    let context = extract_ident(context);
-    Ok((lexer, context))
-}
-
-fn extract_ident<'a>(arg: &'a FnArg) -> Option<&'a Ident> {
-    if let FnArg::Typed(p) = arg {
-        if let Pat::Ident(i) = &*p.pat {
-            return Some(&i.ident);
-        }
+impl ToTokens for Infix {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let Infix {
+            attrs,
+            vis,
+            sig,
+            utils,
+            body,
+        } = self;
+        tokens.extend(quote! {
+            #(#attrs)*
+            #vis #sig {
+                #utils
+                #body
+            }
+        })
     }
-    None
 }

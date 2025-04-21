@@ -17,7 +17,6 @@
 #![allow(clippy::let_underscore_untyped)]
 
 use proc::util::CrateAnd;
-use proc_macro_crate::{crate_name, FoundCrate};
 
 mod derive_token;
 mod free;
@@ -45,27 +44,19 @@ pub fn prefix(
 }
 
 /// Pratt infix parser
-#[proc_macro_attribute]
+#[proc::attribute(host = "pratt")]
 pub fn infix(
-    args: proc_macro::TokenStream,
-    input: proc_macro::TokenStream,
-) -> proc_macro::TokenStream {
-    let args = {
-        let mut parsed = infix::Args::default();
-        let parser = syn::meta::parser(|meta| parsed.parse(&meta));
-        syn::parse_macro_input!(args with parser);
-        parsed
-    };
-    infix::infix_impl(args, syn::parse_macro_input!(input as syn::ItemFn))
-        .unwrap_or_else(syn::Error::into_compile_error)
-        .into()
+    crate_: proc::Path,
+    input: proc::ItemFn,
+) -> proc::Result<infix::Infix> {
+    infix::Infix::new(crate_, input)
 }
 
 /// Provide pratt parsing utilities with minimal requirements
 #[proc::attribute(host = "pratt")]
 pub fn free(
     crate_: proc::Path,
-    input: syn::ItemFn,
+    input: proc::ItemFn,
 ) -> proc::Result<free::Free> {
     free::Free::new(crate_, input)
 }
@@ -77,15 +68,4 @@ pub fn prototype(
     CrateAnd { crate_, args }: CrateAnd<prototype::Input>,
 ) -> proc::Result<prototype::Prototype> {
     Ok(prototype::Prototype::new(crate_, args))
-}
-
-fn name() -> syn::Result<proc_macro2::TokenStream> {
-    match crate_name("pratt") {
-        Ok(FoundCrate::Itself) => Ok(quote::quote!(crate)),
-        Ok(FoundCrate::Name(name)) => {
-            let ident = quote::format_ident!("{name}");
-            Ok(quote::quote!(::#ident))
-        }
-        Err(e) => Err(syn::Error::new(proc_macro2::Span::call_site(), e)),
-    }
 }

@@ -1,9 +1,8 @@
 use proc::{
-    quote::ToTokens,
+    quote::{quote, ToTokens},
     syn::{Expr, Token, Type},
     Parse, Path,
 };
-use quote::quote;
 
 #[derive(Parse)]
 pub(crate) struct Input {
