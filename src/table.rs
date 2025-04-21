@@ -210,7 +210,7 @@ mod tests {
 
     #[derive(Debug, Copy, Clone, PartialEq, pratt_derive::Token)]
     enum Token {
-        #[pratt(payload = *it.0)]
+        #[pratt(payload = *it)]
         Atom(char),
         #[pratt(payload = '+')]
         Add,

@@ -1,7 +1,7 @@
 use proc::{
     quote::ToTokens,
     syn::{Expr, Token, Type},
-    Parse, Path, Result,
+    Parse, Path,
 };
 use quote::quote;
 
@@ -33,13 +33,13 @@ impl Prototype {
             expr,
             _c3,
         }: Input,
-    ) -> Result<Self> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             crate_,
             target,
             prototype,
             expr,
-        })
+        }
     }
 }
 

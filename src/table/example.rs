@@ -9,7 +9,7 @@ use span::Span;
 #[derive(Debug, Copy, Clone, pratt::Token)]
 #[pratt(crate = pratt)]
 enum Token {
-    #[pratt(payload = *it.0)]
+    #[pratt(payload = *it)]
     Atom(char),
     #[pratt(payload = '+')]
     Add,

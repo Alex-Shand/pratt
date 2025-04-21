@@ -27,13 +27,12 @@ mod prototype;
 mod util;
 
 /// Derive macro for pratt::Token
-#[proc_macro_derive(Token, attributes(pratt))]
-pub fn derive_token(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    derive_token::derive_token_impl(syn::parse_macro_input!(
-        input as syn::ItemEnum
-    ))
-    .unwrap_or_else(syn::Error::into_compile_error)
-    .into()
+#[proc::derive(name = Token, attribute = pratt, host = "pratt")]
+pub fn derive_token(
+    crate_: proc::Path,
+    input: proc::ItemEnum,
+) -> proc::Result<derive_token::DeriveToken> {
+    derive_token::DeriveToken::new(crate_, input)
 }
 
 /// Pratt prefix parser
@@ -93,7 +92,7 @@ pub fn free(
 pub fn prototype(
     CrateAnd { crate_, args }: CrateAnd<prototype::Input>,
 ) -> proc::Result<prototype::Prototype> {
-    prototype::Prototype::new(crate_, args)
+    Ok(prototype::Prototype::new(crate_, args))
 }
 
 fn name() -> syn::Result<proc_macro2::TokenStream> {
