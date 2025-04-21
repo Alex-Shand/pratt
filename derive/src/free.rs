@@ -5,7 +5,7 @@ use syn::{
     Ident, ItemFn, Path, Result, Signature, Visibility,
 };
 
-use crate::utils::{self, extract_ident, require_lexer_ident};
+use crate::utils;
 
 pub(crate) struct Free {
     attrs: Vec<Attribute>,
@@ -44,8 +44,8 @@ impl Free {
         else {
             return Err(Error::new_spanned(args, "First argument is expected to be the lexer, second should be the context"));
         };
-        let lexer = require_lexer_ident(lexer)?;
-        let context = extract_ident(context);
+        let lexer = utils::require_lexer_ident(lexer)?;
+        let context = utils::extract_ident(context);
         Ok((lexer, context))
     }
 }

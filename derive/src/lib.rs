@@ -36,20 +36,12 @@ pub fn derive_token(
 }
 
 /// Pratt prefix parser
-#[proc_macro_attribute]
+#[proc::attribute(host = "pratt")]
 pub fn prefix(
-    args: proc_macro::TokenStream,
-    input: proc_macro::TokenStream,
-) -> proc_macro::TokenStream {
-    let args = {
-        let mut parsed = prefix::Args::default();
-        let parser = syn::meta::parser(|meta| parsed.parse(&meta));
-        syn::parse_macro_input!(args with parser);
-        parsed
-    };
-    prefix::prefix_impl(args, syn::parse_macro_input!(input as syn::ItemFn))
-        .unwrap_or_else(syn::Error::into_compile_error)
-        .into()
+    crate_: proc::Path,
+    input: proc::ItemFn,
+) -> proc::Result<prefix::Prefix> {
+    prefix::Prefix::new(crate_, input)
 }
 
 /// Pratt infix parser
