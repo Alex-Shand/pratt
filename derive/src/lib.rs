@@ -21,6 +21,7 @@ use proc::util::CrateAnd;
 mod derive_token;
 mod free;
 mod infix;
+mod keywords;
 mod prefix;
 mod prototype;
 mod utils;
@@ -68,4 +69,11 @@ pub fn prototype(
     CrateAnd { crate_, args }: CrateAnd<prototype::Input>,
 ) -> proc::Result<prototype::Prototype> {
     Ok(prototype::Prototype::new(crate_, args))
+}
+
+// Documented in the wrapper in pratt
+#[allow(missing_docs)]
+#[proc::function]
+pub fn keywords(args: keywords::Input) -> proc::Result<keywords::Keywords> {
+    keywords::Keywords::new(args)
 }

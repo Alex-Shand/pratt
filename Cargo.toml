@@ -5,6 +5,9 @@ edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[workspace]
+members = ["derive"]
+
 [dependencies]
 do_while = "0.1.0"
 pratt_derive = { version = "0.1.0", path = "derive" }
