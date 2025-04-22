@@ -103,7 +103,7 @@ pub(crate) fn generate(
     }
 }
 
-pub(crate) fn extract_ident<'a>(arg: &'a FnArg) -> Option<&'a Ident> {
+pub(crate) fn extract_ident(arg: &FnArg) -> Option<&Ident> {
     if let FnArg::Typed(p) = arg {
         if let Pat::Ident(i) = &*p.pat {
             return Some(&i.ident);
@@ -112,7 +112,7 @@ pub(crate) fn extract_ident<'a>(arg: &'a FnArg) -> Option<&'a Ident> {
     None
 }
 
-pub(crate) fn require_lexer_ident<'a>(arg: &'a FnArg) -> Result<&'a Ident> {
+pub(crate) fn require_lexer_ident(arg: &FnArg) -> Result<&Ident> {
     extract_ident(arg).ok_or_else(|| {
         Error::new_spanned(arg, "The lexer argument must be named")
     })

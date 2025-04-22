@@ -19,7 +19,7 @@ pub(crate) struct Prefix {
 
 impl Prefix {
     pub(crate) fn new(
-        crate_: Path,
+        crate_: &Path,
         ItemFn {
             attrs,
             vis,
@@ -28,7 +28,7 @@ impl Prefix {
         }: ItemFn,
     ) -> Result<Self> {
         let (lexer, context) = Self::validate_args(&sig.inputs)?;
-        let utils = utils::generate(&crate_, lexer, context);
+        let utils = utils::generate(crate_, lexer, context);
         Ok(Self {
             attrs,
             vis,
@@ -38,9 +38,9 @@ impl Prefix {
         })
     }
 
-    fn validate_args<'a>(
-        args: &'a Punctuated<FnArg, Comma>,
-    ) -> Result<(&'a Ident, Option<&'a Ident>)> {
+    fn validate_args(
+        args: &Punctuated<FnArg, Comma>,
+    ) -> Result<(&Ident, Option<&Ident>)> {
         let mut args_iter = args.iter();
         let (Some(_), Some(lexer), Some(context), None) = (
             args_iter.next(),

@@ -191,6 +191,6 @@ impl ToTokens for TraitImpl<'_> {
                     }
                 }
             }
-        })
+        });
     }
 }

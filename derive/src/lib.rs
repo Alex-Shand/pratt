@@ -15,6 +15,7 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::doc_markdown)]
 #![allow(clippy::let_underscore_untyped)]
+#![allow(clippy::struct_field_names)]
 
 use proc::util::CrateAnd;
 
@@ -41,7 +42,7 @@ pub fn prefix(
     crate_: proc::Path,
     input: proc::ItemFn,
 ) -> proc::Result<prefix::Prefix> {
-    prefix::Prefix::new(crate_, input)
+    prefix::Prefix::new(&crate_, input)
 }
 
 /// Pratt infix parser
@@ -50,7 +51,7 @@ pub fn infix(
     crate_: proc::Path,
     input: proc::ItemFn,
 ) -> proc::Result<infix::Infix> {
-    infix::Infix::new(crate_, input)
+    infix::Infix::new(&crate_, input)
 }
 
 /// Provide pratt parsing utilities with minimal requirements
@@ -59,7 +60,7 @@ pub fn free(
     crate_: proc::Path,
     input: proc::ItemFn,
 ) -> proc::Result<free::Free> {
-    free::Free::new(crate_, input)
+    free::Free::new(&crate_, input)
 }
 
 // Documented in the wrapper in pratt

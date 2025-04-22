@@ -242,82 +242,82 @@ mod tests {
         }
     }
 
-    // mod expansion {
-    //     use std::collections::BTreeMap;
+    mod expansion {
+        use std::collections::BTreeMap;
 
-    //     use pretty_assertions::assert_eq;
-    //     use proc::quote::ToTokens;
+        use pretty_assertions::assert_eq;
+        use proc::quote::ToTokens;
 
-    //     use super::*;
+        use super::*;
 
-    //     #[test]
-    //     fn always_fail() {
-    //         let dispatcher = Dispatcher::AlwaysFail(some_ident());
-    //         assert_eq!(
-    //             "something . abort ()",
-    //             dispatcher.into_token_stream().to_string()
-    //         );
-    //     }
+        #[test]
+        fn always_fail() {
+            let dispatcher = Dispatcher::AlwaysFail(some_ident());
+            assert_eq!(
+                "something . abort ()",
+                dispatcher.into_token_stream().to_string()
+            );
+        }
 
-    //     #[test]
-    //     fn test_then_succeed() {
-    //         let dispatcher = Dispatcher::TestThenSucceed {
-    //             checkpoint: some_ident(),
-    //             test: "test".chars().collect(),
-    //             terminator: parse_quote!(|c| c == ' '),
-    //             body: some_expr(),
-    //         };
-    //         assert_eq!(
-    //             r#"if "test" . chars () . zip (checkpoint) . all (| (t , c) | t == c) && (| c | c == ' ') (something . peek ()) { () } else { something . abort () }"#,
-    //             dispatcher.into_token_stream().to_string()
-    //         );
-    //     }
+        #[test]
+        fn test_then_succeed() {
+            let dispatcher = Dispatcher::TestThenSucceed {
+                checkpoint: some_ident(),
+                test: "test".chars().collect(),
+                terminator: parse_quote!(|c| c == ' '),
+                body: some_expr(),
+            };
+            assert_eq!(
+                r#"if something . head_matches ("test") { if let Some (__pratt_internal_c) = something . peek () { if (| c | c == ' ') (__pratt_internal_c) { something . commit () ; () } else { something . abort () } } else { something . commit () ; () } } else { something . abort () }"#,
+                dispatcher.into_token_stream().to_string()
+            );
+        }
 
-    //     #[test]
-    //     fn succeed_or_continue() {
-    //         let mut next = BTreeMap::new();
-    //         let _ = next.insert('a', Dispatcher::AlwaysFail(some_ident()));
-    //         let _ = next.insert(
-    //             'b',
-    //             Dispatcher::TestThenSucceed {
-    //                 checkpoint: some_ident(),
-    //                 test: "test".chars().collect(),
-    //                 terminator: parse_quote!(char::is_whitespace),
-    //                 body: parse_quote!(continue_),
-    //             },
-    //         );
+        #[test]
+        fn succeed_or_continue() {
+            let mut next = BTreeMap::new();
+            let _ = next.insert('a', Dispatcher::AlwaysFail(some_ident()));
+            let _ = next.insert(
+                'b',
+                Dispatcher::TestThenSucceed {
+                    checkpoint: some_ident(),
+                    test: "test".chars().collect(),
+                    terminator: parse_quote!(char::is_whitespace),
+                    body: parse_quote!(continue_),
+                },
+            );
 
-    //         let dispatcher = Dispatcher::SucceedOrContinue {
-    //             checkpoint: some_ident(),
-    //             next,
-    //             terminator: parse_quote!(|c| c.is_alphabetic()),
-    //             body: parse_quote!(succeed),
-    //         };
-    //         assert_eq!(
-    //             r#"match something . peek () { 'a' => { let _ = something . next () ; something . abort () } , 'b' => { let _ = something . next () ; if "test" . chars () . zip (checkpoint) . all (| (t , c) | t == c) && (char :: is_whitespace) (something . peek ()) { continue_ } else { something . abort () } } , c => if (| c | c . is_alphabetic ()) (& c) { succeed } else { something . abort () } }"#,
-    //             dispatcher.into_token_stream().to_string()
-    //         );
-    //     }
+            let dispatcher = Dispatcher::SucceedOrContinue {
+                checkpoint: some_ident(),
+                next,
+                terminator: parse_quote!(|c| c.is_alphabetic()),
+                body: parse_quote!(succeed),
+            };
+            assert_eq!(
+                r#"match something . peek () { Some ('a') => { let _ = something . next () ; something . abort () } , Some ('b') => { let _ = something . next () ; if something . head_matches ("test") { if let Some (__pratt_internal_c) = something . peek () { if (char :: is_whitespace) (__pratt_internal_c) { something . commit () ; continue_ } else { something . abort () } } else { something . commit () ; continue_ } } else { something . abort () } } , Some (__pratt_internal_c) => if (| c | c . is_alphabetic ()) (__pratt_internal_c) { something . commit () ; succeed } else { something . abort () } None => { succeed } }"#,
+                dispatcher.into_token_stream().to_string()
+            );
+        }
 
-    //     #[test]
-    //     fn continue_() {
-    //         let mut next = BTreeMap::new();
-    //         let _ = next.insert('a', Dispatcher::AlwaysFail(some_ident()));
-    //         let _ = next.insert(
-    //             'b',
-    //             Dispatcher::TestThenSucceed {
-    //                 checkpoint: some_ident(),
-    //                 test: "test".chars().collect(),
-    //                 terminator: parse_quote!(char::is_whitespace),
-    //                 body: parse_quote!(continue_),
-    //             },
-    //         );
+        #[test]
+        fn continue_() {
+            let mut next = BTreeMap::new();
+            let _ = next.insert('a', Dispatcher::AlwaysFail(some_ident()));
+            let _ = next.insert(
+                'b',
+                Dispatcher::TestThenSucceed {
+                    checkpoint: some_ident(),
+                    test: "test".chars().collect(),
+                    terminator: parse_quote!(char::is_whitespace),
+                    body: parse_quote!(continue_),
+                },
+            );
 
-    //         let dispatcher = Dispatcher::Continue(some_ident(), next);
-    //         assert_eq!(
-    //             r#"match something . peek () { 'a' => { let _ = something . next () ; something . abort () } , 'b' => { let _ = something . next () ; if "test" . chars () . zip (checkpoint) . all (| (t , c) | t == c) && (char :: is_whitespace) (something . peek ()) { continue_ } else { something . abort () } } , _ => something . abort () }"#,
-    //             dispatcher.into_token_stream().to_string()
-    //         );
-    //     }
-    // }
+            let dispatcher = Dispatcher::Continue(some_ident(), next);
+            assert_eq!(
+                r#"match something . peek () { Some ('a') => { let _ = something . next () ; something . abort () } , Some ('b') => { let _ = something . next () ; if something . head_matches ("test") { if let Some (__pratt_internal_c) = something . peek () { if (char :: is_whitespace) (__pratt_internal_c) { something . commit () ; continue_ } else { something . abort () } } else { something . commit () ; continue_ } } else { something . abort () } } , _ => something . abort () }"#,
+                dispatcher.into_token_stream().to_string()
+            );
+        }
+    }
 }

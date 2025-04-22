@@ -19,7 +19,7 @@ pub(crate) struct Infix {
 
 impl Infix {
     pub(crate) fn new(
-        crate_: Path,
+        crate_: &Path,
         ItemFn {
             attrs,
             vis,
@@ -28,7 +28,7 @@ impl Infix {
         }: ItemFn,
     ) -> Result<Self> {
         let (lexer, context) = Self::validate_args(&sig.inputs)?;
-        let utils = utils::generate(&crate_, lexer, context);
+        let utils = utils::generate(crate_, lexer, context);
         Ok(Self {
             attrs,
             vis,
@@ -75,6 +75,6 @@ impl ToTokens for Infix {
                 #utils
                 #body
             }
-        })
+        });
     }
 }
