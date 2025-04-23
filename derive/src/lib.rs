@@ -63,7 +63,7 @@ pub fn free(
     free::Free::new(&crate_, input)
 }
 
-// Documented in the wrapper in pratt
+// Documented in the re-export in pratt
 #[allow(missing_docs)]
 #[proc::function]
 pub fn prototype(

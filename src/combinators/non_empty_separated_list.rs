@@ -6,8 +6,8 @@ use crate::{LexerHandle, Result};
 pub mod builders;
 
 /// Given a parser for an element, construct a new parser which parses a
-/// possibly empty list of elements
-#[derive(Debug)]
+/// non-empty list of elements
+#[expect(missing_debug_implementations)]
 pub struct NonEmptySeparatedList<
     Token: crate::Token,
     Context: Copy,

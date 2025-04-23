@@ -42,17 +42,17 @@ macro_rules! assoc {
 /// Used to construct the pratt table
 ///
 /// The token type being operated on is expected to be in scope with the name
-/// Token
+/// `Token`
 ///
-/// Format of each row is TokenType => [ prefix, infix, assoc, bind ];
+/// Format of each row is `TokenType => [ prefix, infix, assoc, bind ];`
 ///
-/// Allowed assoc values are L (left associative), R/_ (right associative)
+/// Allowed assoc values are `L` (left associative), `R`/`_` (right associative)
 ///
-/// Using _ in the bind column assigns a new fresh binding power, binding power
-/// increases going down the table (e.g lower rows bind tighter by default).
-/// An identifier can be used in the bind column to mint a new binding power,
-/// assign it to the current row and also give it a name. Using =NAME in another
-/// row will assign the same binding power to that row
+/// Using `_` in the bind column assigns a new fresh binding power, binding
+/// power increases going down the table (e.g lower rows bind tighter by
+/// default). An identifier can be used in the bind column to mint a new binding
+/// power, assign it to the current row and also give it a name. Using `=NAME`
+/// in another row will assign the same binding power to that row
 ///
 /// # Example
 #[doc = include_str!("example.rs")]

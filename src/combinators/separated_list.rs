@@ -9,7 +9,7 @@ pub mod builders;
 
 /// Given a parser for an element, construct a new parser which parses a
 /// possibly empty list of elements
-#[derive(Debug)]
+#[expect(missing_debug_implementations)]
 pub struct SeparatedList<
     Token: crate::Token,
     Context: Copy,

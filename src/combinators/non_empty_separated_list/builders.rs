@@ -6,7 +6,8 @@ use super::NonEmptySeparatedList;
 use crate::{LexerHandle, Result};
 
 /// Builder for [NonEmptySeparatedList]
-#[derive(Debug, Copy, Clone)]
+#[expect(missing_copy_implementations)]
+#[expect(missing_debug_implementations)]
 pub struct NonEmptySeparatedListBuilder;
 
 impl NonEmptySeparatedListBuilder {
@@ -30,7 +31,7 @@ impl NonEmptySeparatedListBuilder {
 }
 
 /// See [NonEmptySeparatedListBuilder]
-#[derive(Debug)]
+#[expect(missing_debug_implementations)]
 pub struct NonEmptySeparatedListBuilderWithParseElement<
     Token: crate::Token,
     Context: Copy,
@@ -110,7 +111,7 @@ where
 }
 
 /// See [NonEmptySeparatedListBuilder]
-#[derive(Debug)]
+#[expect(missing_debug_implementations)]
 pub struct NonEmptySeparatedListBuilderWithParseElementAndHasElement<
     Token: crate::Token,
     Context: Copy,
@@ -162,7 +163,7 @@ where
 }
 
 /// See [NonEmptySeparatedListBuilder]
-#[derive(Debug)]
+#[expect(missing_debug_implementations)]
 pub struct CompleteNonEmptySeparatedListBuilder<
     Token: crate::Token,
     Context: Copy,

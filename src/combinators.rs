@@ -20,7 +20,7 @@ mod separated_list;
 fn check<Token: crate::Token, Context: Copy>(
     tokens: &mut dyn Lexer<Token = Token, Context = Context>,
     context: Context,
-    expected: <Token as crate::Token>::Type,
+    expected: Token::Type,
 ) -> bool {
     let Some(token) = tokens.peek(context) else {
         return false;

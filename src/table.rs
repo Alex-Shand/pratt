@@ -140,13 +140,13 @@ impl<T: Token + std::fmt::Debug, Context: Copy, Ast> Table<T, Context, Ast> {
         self.binders[level]
     }
 
-    /// Look up the binding power of a token, usable with [Table::parse_at] to
+    /// Look up the binding power of a token, usable with [Table::parse_at_raw] to
     /// control precedence levels for infix parsing. Binding power is adjusted
     /// to account for the token's declared associativity
     ///
     /// This method is only relevant for token types with defined infix parsers
     #[must_use]
-    pub fn bind_of(&self, token: T::Type) -> u8 {
+    fn bind_of(&self, token: T::Type) -> u8 {
         let row = self.row(Some(&token));
 
         debug_assert!(

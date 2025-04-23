@@ -139,8 +139,8 @@ pub fn prototype<P>(p: &impl Prototypical<Prototype = P>) -> &P {
 
 /// Trait for items with spans.
 pub trait Spanned {
-    /// Retrieve the entitiy's span, return [Span::UNKNOWN] if the item doesn't
-    /// have a valid span
+    /// Retrieve an item's span, return [Span::UNKNOWN] if the item doesn't have
+    /// a valid span
     fn span(&self) -> Span;
 }
 
@@ -162,80 +162,75 @@ impl Spanned for Span {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use ::span::{LineAndColumn, Span};
-//     use pretty_assertions::assert_eq;
-//     use rstest::rstest;
+#[cfg(test)]
+mod tests {
+    use ::span::{Chars, Span};
+    use pretty_assertions::assert_eq;
+    use rstest::rstest;
 
-//     use crate::Token as _;
+    use crate::Token as _;
 
-//     mod token {
-//         use span::{LineAndColumn, Span};
+    fn custom_span(i: usize) -> Span {
+        let chars = &mut Chars::new("12345");
+        let start = chars.start_token();
+        for _ in chars.take(i) {}
+        chars.end_token(start)
+    }
 
-//         // If this compiles we know that #[derive(Token)] doesn't need the token
-//         // trait in scope
+    mod token {
+        use span::Span;
 
-//         #[derive(pratt_derive::Token)]
-//         pub(super) enum Token {
-//             #[pratt(payload = it.0.to_string(), span = custom_span(it))]
-//             Int(usize),
-//             #[pratt(payload = it.0.clone(), span = *it.1)]
-//             String(String, Span),
-//             #[pratt(payload = *it.1)]
-//             Char((), char),
-//             #[pratt(payload = "Foo", span = Span { start: LineAndColumn { line: 1, column: 2 }, end: LineAndColumn { line: 3, column: 4 } })]
-//             Foo,
-//         }
+        // If this compiles we know that #[derive(Token)] doesn't need the token
+        // trait in scope
 
-//         fn custom_span((i,): (&usize,)) -> Span {
-//             let pos = LineAndColumn {
-//                 line: *i,
-//                 column: *i,
-//             };
-//             Span {
-//                 start: pos,
-//                 end: pos,
-//             }
-//         }
-//     }
-//     use token::Token;
-//     type TokenType = <Token as super::Token>::Type;
+        #[derive(pratt_derive::Token)]
+        pub(super) enum Token {
+            #[pratt(payload = it.to_string(), span = super::custom_span(*it))]
+            Int(usize),
+            #[pratt(payload = it.0.clone(), span = *it.1)]
+            String(String, Span),
+            #[pratt(payload = *it.1)]
+            Char((), char),
+            #[pratt(payload = "Foo")]
+            Foo,
+        }
+    }
+    use token::Token;
+    type TokenType = <Token as super::Token>::Type;
 
-//     #[rstest]
-//     #[case(Token::Int(42), TokenType::Int)]
-//     #[case(Token::String(String::new(), Span::UNKNOWN), TokenType::String)]
-//     #[case(Token::Char((), 'c'), TokenType::Char)]
-//     #[case(Token::Foo, TokenType::Foo)]
-//     fn typ(#[case] token: Token, #[case] expected: TokenType) {
-//         assert_eq!(token.typ(), expected);
-//     }
+    #[rstest]
+    #[case(Token::Int(42), TokenType::Int)]
+    #[case(Token::String(String::new(), Span::UNKNOWN), TokenType::String)]
+    #[case(Token::Char((), 'c'), TokenType::Char)]
+    #[case(Token::Foo, TokenType::Foo)]
+    fn typ(#[case] token: Token, #[case] expected: TokenType) {
+        assert_eq!(token.typ(), expected);
+    }
 
-//     #[rstest]
-//     #[case(Token::Int(42), "42")]
-//     #[case(
-//         Token::String(String::from("This is a test"), Span::UNKNOWN),
-//         "This is a test"
-//     )]
-//     #[case(Token::Char((), 'c'), "c")]
-//     #[case(Token::Foo, "Foo")]
-//     fn payload(#[case] token: Token, #[case] expected: &'static str) {
-//         assert_eq!(token.payload(), expected);
-//     }
+    #[rstest]
+    #[case(Token::Int(42), "42")]
+    #[case(
+        Token::String(String::from("This is a test"), Span::UNKNOWN),
+        "This is a test"
+    )]
+    #[case(Token::Char((), 'c'), "c")]
+    #[case(Token::Foo, "Foo")]
+    fn payload(#[case] token: Token, #[case] expected: &'static str) {
+        assert_eq!(token.payload(), expected);
+    }
 
-//     #[rstest]
-//     #[case(Token::Int(42), Span { start: LineAndColumn { line: 42, column: 42 }, end: LineAndColumn { line: 42, column: 42 } })]
-//     #[case(
-//         Token::String(String::new(), Span { start: LineAndColumn { line: 4, column: 3 }, end: LineAndColumn { line: 2, column: 1 } }),
-//         Span { start: LineAndColumn { line: 4, column: 3 }, end: LineAndColumn { line: 2, column: 1 } }
-//     )]
-//     #[case(Token::Foo, Span { start: LineAndColumn { line: 1, column: 2 }, end: LineAndColumn { line: 3, column: 4 } })]
-//     fn span(#[case] token: Token, #[case] expected: Span) {
-//         assert_eq!(token.span(), expected);
-//     }
+    #[rstest]
+    #[case(Token::Int(4), "line 1 column 1 to column 5")]
+    #[case(
+        Token::String(String::new(), custom_span(5)),
+        "line 1 column 1 to column 6"
+    )]
+    fn span(#[case] token: Token, #[case] expected: &str) {
+        assert_eq!(format!("{:#}", token.span()), expected);
+    }
 
-//     #[test]
-//     fn span_unknown() {
-//         assert!(Token::Char((), 'c').span().is_unknown());
-//     }
-// }
+    #[test]
+    fn span_unknown() {
+        assert!(Token::Char((), 'c').span().is_unknown());
+    }
+}

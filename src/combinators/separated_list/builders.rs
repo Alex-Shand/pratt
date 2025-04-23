@@ -6,7 +6,8 @@ use super::SeparatedList;
 use crate::{LexerHandle, Result};
 
 /// Builder for [SeparatedList]
-#[derive(Debug, Copy, Clone)]
+#[expect(missing_copy_implementations)]
+#[expect(missing_debug_implementations)]
 pub struct SeparatedListBuilder;
 
 impl SeparatedListBuilder {
@@ -29,7 +30,7 @@ impl SeparatedListBuilder {
 }
 
 /// See [SeparatedListBuilder]
-#[derive(Debug)]
+#[expect(missing_debug_implementations)]
 pub struct SeparatedListBuilderWithParseElement<
     Token: crate::Token,
     Context: Copy,
@@ -104,7 +105,7 @@ where
 }
 
 /// See [SeparatedListBuilder]
-#[derive(Debug)]
+#[expect(missing_debug_implementations)]
 pub struct SeparatedListBuilderWithParseElementAndHasElement<
     Token: crate::Token,
     Context: Copy,
@@ -156,7 +157,7 @@ where
 }
 
 /// See [SeparatedListBuilder]
-#[derive(Debug)]
+#[expect(missing_debug_implementations)]
 pub struct CompleteSeparatedListBuilder<
     Token: crate::Token,
     Context: Copy,
