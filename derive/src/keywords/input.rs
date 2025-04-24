@@ -1,9 +1,8 @@
 use proc::{
     syn::{Expr, Ident, LitStr, Token},
+    util::parsers::{Braced, Bracketed, GreedySequence},
     Parse,
 };
-
-use super::nursary::{Braced, Bracketed, GreedySequence};
 
 mod kw {
     use proc::syn::custom_keyword;

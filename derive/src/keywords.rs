@@ -3,18 +3,16 @@ use std::{collections::HashMap, rc::Rc};
 use proc::{
     quote::{format_ident, quote, ToTokens},
     syn::{Error, Ident},
+    util::parsers::{Braced, GreedySequence},
     Result,
 };
 
+use self::dispatcher::Dispatcher;
 pub(crate) use self::input::Input;
-use self::{
-    dispatcher::Dispatcher,
-    nursary::{Braced, GreedySequence},
-};
 
 mod dispatcher;
 mod input;
-mod nursary;
+//mod nursary;
 
 pub(crate) struct Keywords {
     chars: Ident,

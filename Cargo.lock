@@ -253,7 +253,7 @@ dependencies = [
 [[package]]
 name = "proc"
 version = "0.1.0"
-source = "git+https://github.com/Alex-Shand/proc.git#7d01dde5bbab71d21cd41026d1003ce81604a4cd"
+source = "git+https://github.com/Alex-Shand/proc.git#49a30b87bf39e7ebb2ec4182a7d2cb562d652cb1"
 dependencies = [
  "proc_attribute",
  "proc_common",
@@ -283,7 +283,7 @@ dependencies = [
 [[package]]
 name = "proc_attribute"
 version = "0.1.0"
-source = "git+https://github.com/Alex-Shand/proc.git#7d01dde5bbab71d21cd41026d1003ce81604a4cd"
+source = "git+https://github.com/Alex-Shand/proc.git#49a30b87bf39e7ebb2ec4182a7d2cb562d652cb1"
 dependencies = [
  "proc_common",
 ]
@@ -291,7 +291,7 @@ dependencies = [
 [[package]]
 name = "proc_common"
 version = "0.1.0"
-source = "git+https://github.com/Alex-Shand/proc.git#7d01dde5bbab71d21cd41026d1003ce81604a4cd"
+source = "git+https://github.com/Alex-Shand/proc.git#49a30b87bf39e7ebb2ec4182a7d2cb562d652cb1"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -303,7 +303,7 @@ dependencies = [
 [[package]]
 name = "proc_derive"
 version = "0.1.0"
-source = "git+https://github.com/Alex-Shand/proc.git#7d01dde5bbab71d21cd41026d1003ce81604a4cd"
+source = "git+https://github.com/Alex-Shand/proc.git#49a30b87bf39e7ebb2ec4182a7d2cb562d652cb1"
 dependencies = [
  "convert_case",
  "proc_attribute",
@@ -313,7 +313,7 @@ dependencies = [
 [[package]]
 name = "proc_function"
 version = "0.1.0"
-source = "git+https://github.com/Alex-Shand/proc.git#7d01dde5bbab71d21cd41026d1003ce81604a4cd"
+source = "git+https://github.com/Alex-Shand/proc.git#49a30b87bf39e7ebb2ec4182a7d2cb562d652cb1"
 dependencies = [
  "proc_attribute",
  "proc_common",
@@ -322,7 +322,7 @@ dependencies = [
 [[package]]
 name = "proc_parse"
 version = "0.1.0"
-source = "git+https://github.com/Alex-Shand/proc.git#7d01dde5bbab71d21cd41026d1003ce81604a4cd"
+source = "git+https://github.com/Alex-Shand/proc.git#49a30b87bf39e7ebb2ec4182a7d2cb562d652cb1"
 dependencies = [
  "proc_common",
  "proc_derive",
@@ -539,9 +539,9 @@ checksum = "f6ccf251212114b54433ec949fd6a7841275f9ada20dddd2f29e9ceea4501493"
 
 [[package]]
 name = "winnow"
-version = "0.7.6"
+version = "0.7.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63d3fcd9bba44b03821e7d699eeee959f3126dcc4aa8e4ae18ec617c2a5cea10"
+checksum = "6cb8234a863ea0e8cd7284fcdd4f145233eb00fee02bbdd9861aec44e6477bc5"
 dependencies = [
  "memchr",
 ]
