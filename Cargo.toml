@@ -10,8 +10,8 @@ members = ["derive"]
 
 [dependencies]
 do_while = "0.1.0"
-pratt_derive = { version = "0.1.0", path = "derive" }
-span = { version = "0.1.0", path = "../span" }
+pratt_derive = { path = "derive" }
+span = { git = "https://github.com/Alex-Shand/span.git" }
 thiserror = "1.0.44"
 
 [dev-dependencies]
