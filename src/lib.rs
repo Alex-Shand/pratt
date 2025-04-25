@@ -19,30 +19,18 @@
 
 use std::iter::Peekable;
 
-#[doc(hidden)]
-pub use pratt_derive::prototype as prototype_impl;
 pub use pratt_derive::{Token, free, infix, prefix};
 pub use span;
 use span::Span;
 #[doc(hidden)]
 pub use table::Assoc;
 pub use table::{Result, Table, error::Error};
+pub use token_and_span::TokenAndSpan;
 
 pub mod combinators;
 pub mod lexer;
 mod table;
-
-/// Implement prototype forwarding between two types. This is necessary to use
-/// one type as a matcher in pratt utility macros for a different token type.
-#[macro_export]
-macro_rules! prototype {
-    ($target:ty, $prototype:ty, $expr:expr) => {
-        $crate::prototype_impl!(
-            crate = $crate,
-            args = ($target, $prototype, $expr)
-        );
-    };
-}
+mod token_and_span;
 
 /// Trait object for [Lexer]
 pub type LexerHandle<'a, Token, Context> =

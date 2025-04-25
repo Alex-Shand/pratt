@@ -17,14 +17,11 @@
 #![allow(clippy::let_underscore_untyped)]
 #![allow(clippy::struct_field_names)]
 
-use proc::util::CrateAnd;
-
 mod derive_token;
 mod free;
 mod infix;
 mod keywords;
 mod prefix;
-mod prototype;
 mod utils;
 
 /// Derive macro for pratt::Token
@@ -61,15 +58,6 @@ pub fn free(
     input: proc::ItemFn,
 ) -> proc::Result<free::Free> {
     free::Free::new(&crate_, input)
-}
-
-// Documented in the re-export in pratt
-#[allow(missing_docs)]
-#[proc::function]
-pub fn prototype(
-    CrateAnd { crate_, args }: CrateAnd<prototype::Input>,
-) -> proc::Result<prototype::Prototype> {
-    Ok(prototype::Prototype::new(crate_, args))
 }
 
 // Documented in the wrapper in pratt
