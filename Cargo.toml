@@ -12,7 +12,7 @@ members = ["derive"]
 do_while = "0.1.0"
 pratt_derive = { path = "derive" }
 span = { git = "https://github.com/Alex-Shand/span.git" }
-thiserror = "1.0.44"
+thiserror = "2.0.12"
 
 [dev-dependencies]
 pretty_assertions = "1.4.0"
