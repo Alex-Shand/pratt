@@ -201,7 +201,7 @@ dependencies = [
 [[package]]
 name = "proc"
 version = "0.1.0"
-source = "git+https://github.com/Alex-Shand/proc.git#5d0f1f8a9b195dc0b2168cf23f68b0bc324c4634"
+source = "git+https://github.com/Alex-Shand/proc.git#b2355a3b1b533dffe07715c10b63cdfd26ba6979"
 dependencies = [
  "proc_attribute",
  "proc_common",
@@ -231,7 +231,7 @@ dependencies = [
 [[package]]
 name = "proc_attribute"
 version = "0.1.0"
-source = "git+https://github.com/Alex-Shand/proc.git#5d0f1f8a9b195dc0b2168cf23f68b0bc324c4634"
+source = "git+https://github.com/Alex-Shand/proc.git#b2355a3b1b533dffe07715c10b63cdfd26ba6979"
 dependencies = [
  "proc_common",
 ]
@@ -239,7 +239,7 @@ dependencies = [
 [[package]]
 name = "proc_common"
 version = "0.1.0"
-source = "git+https://github.com/Alex-Shand/proc.git#5d0f1f8a9b195dc0b2168cf23f68b0bc324c4634"
+source = "git+https://github.com/Alex-Shand/proc.git#b2355a3b1b533dffe07715c10b63cdfd26ba6979"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -251,7 +251,7 @@ dependencies = [
 [[package]]
 name = "proc_derive"
 version = "0.1.0"
-source = "git+https://github.com/Alex-Shand/proc.git#5d0f1f8a9b195dc0b2168cf23f68b0bc324c4634"
+source = "git+https://github.com/Alex-Shand/proc.git#b2355a3b1b533dffe07715c10b63cdfd26ba6979"
 dependencies = [
  "convert_case",
  "proc_attribute",
@@ -261,7 +261,7 @@ dependencies = [
 [[package]]
 name = "proc_function"
 version = "0.1.0"
-source = "git+https://github.com/Alex-Shand/proc.git#5d0f1f8a9b195dc0b2168cf23f68b0bc324c4634"
+source = "git+https://github.com/Alex-Shand/proc.git#b2355a3b1b533dffe07715c10b63cdfd26ba6979"
 dependencies = [
  "proc_attribute",
  "proc_common",
@@ -270,7 +270,7 @@ dependencies = [
 [[package]]
 name = "proc_parse"
 version = "0.1.0"
-source = "git+https://github.com/Alex-Shand/proc.git#5d0f1f8a9b195dc0b2168cf23f68b0bc324c4634"
+source = "git+https://github.com/Alex-Shand/proc.git#b2355a3b1b533dffe07715c10b63cdfd26ba6979"
 dependencies = [
  "proc_common",
  "proc_derive",
