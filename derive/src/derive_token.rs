@@ -91,7 +91,8 @@ impl Variant {
         let attrs = mem::take(&mut variant.attrs);
         let parser: (Required<Expr>, Optional<Expr>) =
             (Required::new("payload"), Optional::new("span"));
-        let (payload, span) = proc::meta::parse_attrs(parser, "pratt", &attrs)?;
+        let (payload, span) =
+            proc::meta::parse_attrs(parser, "pratt", &attrs, &variant)?;
         let fields = mem::replace(&mut variant.fields, Fields::Unit);
         Ok(Self {
             payload,
