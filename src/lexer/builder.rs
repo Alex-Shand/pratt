@@ -4,6 +4,7 @@ use std::marker::PhantomData;
 
 use span::Chars;
 
+use super::Result;
 use crate::{Lexer, Token};
 
 #[expect(missing_docs)]
@@ -20,7 +21,7 @@ impl<C: Copy> Builder<C> {
     /// Build a lexer from a function which returns one token at a time
     pub fn with_token_fn<T: Token>(
         self,
-        token_fn: fn(&mut Chars, C) -> Option<T>,
+        token_fn: fn(&mut Chars, C) -> Result<Option<T>>,
     ) -> StatelessLexerSingleTokenBuilder<C, T> {
         StatelessLexerSingleTokenBuilder(token_fn)
     }
@@ -28,7 +29,7 @@ impl<C: Copy> Builder<C> {
     /// Build a lexer from a function which may return multiple tokens at once
     pub fn with_tokens_fn<T: Token>(
         self,
-        tokens_fn: fn(&mut Chars, C) -> Vec<T>,
+        tokens_fn: fn(&mut Chars, C) -> Result<Vec<T>>,
     ) -> StatelessLexerMultiTokenBuilder<C, T> {
         StatelessLexerMultiTokenBuilder(tokens_fn)
     }
@@ -45,7 +46,7 @@ impl<C: Copy, S: Default> BuilderWithState<C, S> {
     /// Build a lexer from a function which returns one token at a time
     pub fn with_token_fn<T: Token>(
         self,
-        token_fn: fn(&mut Chars, C, &mut S) -> Option<T>,
+        token_fn: fn(&mut Chars, C, &mut S) -> Result<Option<T>>,
     ) -> StatefullLexerSingleTokenBuilder<C, S, T> {
         StatefullLexerSingleTokenBuilder(token_fn)
     }
@@ -53,7 +54,7 @@ impl<C: Copy, S: Default> BuilderWithState<C, S> {
     /// Build a lexer from a function which may return multiple tokens at once
     pub fn with_tokens_fn<T: Token>(
         self,
-        tokens_fn: fn(&mut Chars, C, &mut S) -> Vec<T>,
+        tokens_fn: fn(&mut Chars, C, &mut S) -> Result<Vec<T>>,
     ) -> StatefullLexerMultiTokenBuilder<C, S, T> {
         StatefullLexerMultiTokenBuilder(tokens_fn)
     }
@@ -62,7 +63,7 @@ impl<C: Copy, S: Default> BuilderWithState<C, S> {
 #[expect(missing_docs)]
 #[expect(missing_debug_implementations)]
 pub struct StatelessLexerSingleTokenBuilder<C: Copy, T: Token>(
-    fn(&mut Chars, C) -> Option<T>,
+    fn(&mut Chars, C) -> Result<Option<T>>,
 );
 
 impl<C: Copy, T: Token> StatelessLexerSingleTokenBuilder<C, T> {
@@ -72,7 +73,7 @@ impl<C: Copy, T: Token> StatelessLexerSingleTokenBuilder<C, T> {
         str: impl Into<String>,
     ) -> impl Lexer<Token = T, Context = C> {
         struct Lexer<T, C> {
-            generator: fn(&mut Chars, C) -> Option<T>,
+            generator: fn(&mut Chars, C) -> Result<Option<T>>,
             chars: Chars,
             token: Option<T>,
             finished: bool,
@@ -82,28 +83,38 @@ impl<C: Copy, T: Token> StatelessLexerSingleTokenBuilder<C, T> {
 
             type Context = C;
 
-            fn token(&mut self, context: Self::Context) -> Option<Self::Token> {
+            fn token(
+                &mut self,
+                context: Self::Context,
+            ) -> Result<Option<Self::Token>> {
                 if self.finished {
-                    return None;
+                    return Ok(None);
                 }
                 if let Some(tok) = self.token.take() {
-                    return Some(tok);
+                    return Ok(Some(tok));
                 }
-                let token = (self.generator)(&mut self.chars, context);
+                let token = (self.generator)(&mut self.chars, context)?;
                 if token.is_none() {
                     self.finished = true;
-                    return None;
+                    return Ok(None);
                 }
-                token
+                Ok(token)
             }
 
-            fn peek(&mut self, context: Self::Context) -> Option<&Self::Token> {
+            fn peek(
+                &mut self,
+                context: Self::Context,
+            ) -> Result<Option<&Self::Token>> {
                 if self.finished {
-                    return None;
+                    return Ok(None);
                 }
-                let token = self.token(context)?;
+                let token = match self.token(context) {
+                    Ok(Some(token)) => token,
+                    Ok(None) => return Ok(None),
+                    Err(e) => return Err(e),
+                };
                 self.token = Some(token);
-                self.token.as_ref()
+                Ok(self.token.as_ref())
             }
         }
         Lexer {
@@ -118,7 +129,7 @@ impl<C: Copy, T: Token> StatelessLexerSingleTokenBuilder<C, T> {
 #[expect(missing_docs)]
 #[expect(missing_debug_implementations)]
 pub struct StatelessLexerMultiTokenBuilder<C: Copy, T: Token>(
-    fn(&mut Chars, C) -> Vec<T>,
+    fn(&mut Chars, C) -> Result<Vec<T>>,
 );
 
 impl<C: Copy, T: Token> StatelessLexerMultiTokenBuilder<C, T> {
@@ -128,7 +139,7 @@ impl<C: Copy, T: Token> StatelessLexerMultiTokenBuilder<C, T> {
         str: impl Into<String>,
     ) -> impl Lexer<Token = T, Context = C> {
         struct Lexer<T, C> {
-            generator: fn(&mut Chars, C) -> Vec<T>,
+            generator: fn(&mut Chars, C) -> Result<Vec<T>>,
             chars: Chars,
             queue: Vec<T>,
             finished: bool,
@@ -138,30 +149,40 @@ impl<C: Copy, T: Token> StatelessLexerMultiTokenBuilder<C, T> {
 
             type Context = C;
 
-            fn token(&mut self, context: Self::Context) -> Option<Self::Token> {
+            fn token(
+                &mut self,
+                context: Self::Context,
+            ) -> Result<Option<Self::Token>> {
                 if self.finished {
-                    return None;
+                    return Ok(None);
                 }
                 if let Some(tok) = self.queue.pop() {
-                    return Some(tok);
+                    return Ok(Some(tok));
                 }
-                let mut tokens = (self.generator)(&mut self.chars, context);
+                let mut tokens = (self.generator)(&mut self.chars, context)?;
                 if tokens.is_empty() {
                     self.finished = true;
-                    return None;
+                    return Ok(None);
                 }
                 tokens.reverse();
                 self.queue = tokens;
                 self.token(context)
             }
 
-            fn peek(&mut self, context: Self::Context) -> Option<&Self::Token> {
+            fn peek(
+                &mut self,
+                context: Self::Context,
+            ) -> Result<Option<&Self::Token>> {
                 if self.finished {
-                    return None;
+                    return Ok(None);
                 }
-                let token = self.token(context)?;
+                let token = match self.token(context) {
+                    Ok(Some(token)) => token,
+                    Ok(None) => return Ok(None),
+                    Err(e) => return Err(e),
+                };
                 self.queue.push(token);
-                self.queue.last()
+                Ok(self.queue.last())
             }
         }
         Lexer {
@@ -176,7 +197,7 @@ impl<C: Copy, T: Token> StatelessLexerMultiTokenBuilder<C, T> {
 #[expect(missing_docs)]
 #[expect(missing_debug_implementations)]
 pub struct StatefullLexerSingleTokenBuilder<C: Copy, S: Default, T: Token>(
-    fn(&mut Chars, C, &mut S) -> Option<T>,
+    fn(&mut Chars, C, &mut S) -> Result<Option<T>>,
 );
 
 impl<C: Copy, S: Default, T: Token> StatefullLexerSingleTokenBuilder<C, S, T> {
@@ -186,7 +207,7 @@ impl<C: Copy, S: Default, T: Token> StatefullLexerSingleTokenBuilder<C, S, T> {
         str: impl Into<String>,
     ) -> impl Lexer<Token = T, Context = C> {
         struct Lexer<T, S, C> {
-            generator: fn(&mut Chars, C, &mut S) -> Option<T>,
+            generator: fn(&mut Chars, C, &mut S) -> Result<Option<T>>,
             chars: Chars,
             token: Option<T>,
             state: S,
@@ -197,29 +218,42 @@ impl<C: Copy, S: Default, T: Token> StatefullLexerSingleTokenBuilder<C, S, T> {
 
             type Context = C;
 
-            fn token(&mut self, context: Self::Context) -> Option<Self::Token> {
+            fn token(
+                &mut self,
+                context: Self::Context,
+            ) -> Result<Option<Self::Token>> {
                 if self.finished {
-                    return None;
+                    return Ok(None);
                 }
                 if let Some(tok) = self.token.take() {
-                    return Some(tok);
+                    return Ok(Some(tok));
                 }
-                let token =
-                    (self.generator)(&mut self.chars, context, &mut self.state);
+                let token = (self.generator)(
+                    &mut self.chars,
+                    context,
+                    &mut self.state,
+                )?;
                 if token.is_none() {
                     self.finished = true;
-                    return None;
+                    return Ok(None);
                 }
-                token
+                Ok(token)
             }
 
-            fn peek(&mut self, context: Self::Context) -> Option<&Self::Token> {
+            fn peek(
+                &mut self,
+                context: Self::Context,
+            ) -> Result<Option<&Self::Token>> {
                 if self.finished {
-                    return None;
+                    return Ok(None);
                 }
-                let token = self.token(context)?;
+                let token = match self.token(context) {
+                    Ok(Some(token)) => token,
+                    Ok(None) => return Ok(None),
+                    Err(e) => return Err(e),
+                };
                 self.token = Some(token);
-                self.token.as_ref()
+                Ok(self.token.as_ref())
             }
         }
         Lexer {
@@ -235,7 +269,7 @@ impl<C: Copy, S: Default, T: Token> StatefullLexerSingleTokenBuilder<C, S, T> {
 #[expect(missing_docs)]
 #[expect(missing_debug_implementations)]
 pub struct StatefullLexerMultiTokenBuilder<C: Copy, S: Default, T: Token>(
-    fn(&mut Chars, C, &mut S) -> Vec<T>,
+    fn(&mut Chars, C, &mut S) -> Result<Vec<T>>,
 );
 
 impl<C: Copy, S: Default, T: Token> StatefullLexerMultiTokenBuilder<C, S, T> {
@@ -245,7 +279,7 @@ impl<C: Copy, S: Default, T: Token> StatefullLexerMultiTokenBuilder<C, S, T> {
         str: impl Into<String>,
     ) -> impl Lexer<Token = T, Context = C> {
         struct Lexer<T, S, C> {
-            generator: fn(&mut Chars, C, &mut S) -> Vec<T>,
+            generator: fn(&mut Chars, C, &mut S) -> Result<Vec<T>>,
             chars: Chars,
             queue: Vec<T>,
             state: S,
@@ -256,31 +290,44 @@ impl<C: Copy, S: Default, T: Token> StatefullLexerMultiTokenBuilder<C, S, T> {
 
             type Context = C;
 
-            fn token(&mut self, context: Self::Context) -> Option<Self::Token> {
+            fn token(
+                &mut self,
+                context: Self::Context,
+            ) -> Result<Option<Self::Token>> {
                 if self.finished {
-                    return None;
+                    return Ok(None);
                 }
                 if let Some(tok) = self.queue.pop() {
-                    return Some(tok);
+                    return Ok(Some(tok));
                 }
-                let mut tokens =
-                    (self.generator)(&mut self.chars, context, &mut self.state);
+                let mut tokens = (self.generator)(
+                    &mut self.chars,
+                    context,
+                    &mut self.state,
+                )?;
                 if tokens.is_empty() {
                     self.finished = true;
-                    return None;
+                    return Ok(None);
                 }
                 tokens.reverse();
                 self.queue = tokens;
                 self.token(context)
             }
 
-            fn peek(&mut self, context: Self::Context) -> Option<&Self::Token> {
+            fn peek(
+                &mut self,
+                context: Self::Context,
+            ) -> Result<Option<&Self::Token>> {
                 if self.finished {
-                    return None;
+                    return Ok(None);
                 }
-                let token = self.token(context)?;
+                let token = match self.token(context) {
+                    Ok(Some(token)) => token,
+                    Ok(None) => return Ok(None),
+                    Err(e) => return Err(e),
+                };
                 self.queue.push(token);
-                self.queue.last()
+                Ok(self.queue.last())
             }
         }
         Lexer {

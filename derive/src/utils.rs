@@ -17,7 +17,7 @@ pub(crate) fn generate(
         #[allow(unused_macros)]
         macro_rules! require {
             ($pat:pat => $body:expr, $context:expr, $err:expr) => {
-                if let ::std::option::Option::Some(token) = #lexer.token($context) {
+                if let ::std::option::Option::Some(token) = #lexer.token($context)? {
                     if let $pat = #crate_::prototype(&token) {
                         let _ = add_span!(#crate_::span_of(&token));
                         $body
@@ -58,7 +58,7 @@ pub(crate) fn generate(
         #[allow(unused_macros)]
         macro_rules! check {
             ($pat:pat, $context:expr) => {
-                if let ::std::option::Option::Some(token) = #lexer.peek($context) {
+                if let ::std::option::Option::Some(token) = #lexer.peek($context)? {
                     if let $pat = #crate_::prototype(token) {
                         true
                     } else {

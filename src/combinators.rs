@@ -10,24 +10,25 @@ pub use self::{
         builders as separated_list_builders,
     },
 };
-use crate::Lexer;
+use crate::{Lexer, lexer};
 
 mod non_empty_separated_list;
 mod separated_list;
 
 /// Peek a token, if it matches the specified type advance the lexer and return
 /// true, otherwise return false. Returns false if there are no tokens available.
+/// Forwards lexer errors out to the caller
 fn check<Token: crate::Token, Context: Copy>(
     tokens: &mut dyn Lexer<Token = Token, Context = Context>,
     context: Context,
     expected: Token::Type,
-) -> bool {
-    let Some(token) = tokens.peek(context) else {
-        return false;
+) -> lexer::Result<bool> {
+    let Some(token) = tokens.peek(context)? else {
+        return Ok(false);
     };
     if token.typ() == expected {
         let _ = tokens.token(context);
-        return true;
+        return Ok(true);
     }
-    false
+    Ok(false)
 }

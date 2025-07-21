@@ -28,6 +28,7 @@ pub use table::{Result, Table, error::Error};
 pub use token_and_span::TokenAndSpan;
 
 pub mod combinators;
+mod error_util;
 pub mod lexer;
 mod table;
 mod token_and_span;
@@ -92,9 +93,15 @@ pub trait Lexer {
 
     /// Peek the next token to be produced. After a call to peek the next call
     /// to token should yield an equivalent token
-    fn peek(&mut self, context: Self::Context) -> Option<&Self::Token>;
+    fn peek(
+        &mut self,
+        context: Self::Context,
+    ) -> lexer::Result<Option<&Self::Token>>;
     /// Yield the next token
-    fn token(&mut self, context: Self::Context) -> Option<Self::Token>;
+    fn token(
+        &mut self,
+        context: Self::Context,
+    ) -> lexer::Result<Option<Self::Token>>;
 }
 
 impl<T: Token, I: Iterator<Item = T>> Lexer for Peekable<I> {
@@ -102,12 +109,18 @@ impl<T: Token, I: Iterator<Item = T>> Lexer for Peekable<I> {
 
     type Context = ();
 
-    fn peek(&mut self, (): Self::Context) -> Option<&Self::Token> {
-        self.peek()
+    fn peek(
+        &mut self,
+        (): Self::Context,
+    ) -> lexer::Result<Option<&Self::Token>> {
+        Ok(self.peek())
     }
 
-    fn token(&mut self, (): Self::Context) -> Option<Self::Token> {
-        self.next()
+    fn token(
+        &mut self,
+        (): Self::Context,
+    ) -> lexer::Result<Option<Self::Token>> {
+        Ok(self.next())
     }
 }
 

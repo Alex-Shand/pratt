@@ -45,11 +45,11 @@ where
         let mut result = Vec::new();
         do_while! {
             do {
-                if lexer.peek(context).is_none_or(|token| !(self.has_element)(token.typ())) {
+                if lexer.peek(context)?.is_none_or(|token| !(self.has_element)(token.typ())) {
                     return Ok(result);
                 }
                 result.push((self.parse_element)(lexer)?);
-            } while super::check(lexer, context, self.separator);
+            } while super::check(lexer, context, self.separator)?;
         }
         Ok(result)
     }
@@ -82,7 +82,7 @@ mod tests {
         impl Fn(TokenType) -> bool,
     > {
         SeparatedListBuilder
-            .parse_element(|lexer| match lexer.token(()) {
+            .parse_element(|lexer| match lexer.token(())? {
                 Some(Token::Item) => Ok(Item),
                 Some(tok) => Err(Error::UnexpectedToken(tok, None)),
                 None => Err(Error::UnexpectedEOF(None)),

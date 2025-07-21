@@ -41,9 +41,9 @@ where
         context: Context,
     ) -> Result<Token, Vec<Element>> {
         let mut result = vec![(self.parse_element)(lexer)?];
-        while super::check(lexer, context, self.separator)
+        while super::check(lexer, context, self.separator)?
             && lexer
-                .peek(context)
+                .peek(context)?
                 .is_some_and(|token| (self.has_element)(token.typ()))
         {
             result.push((self.parse_element)(lexer)?);
@@ -79,7 +79,7 @@ mod tests {
         impl Fn(TokenType) -> bool,
     > {
         NonEmptySeparatedListBuilder
-            .parse_element(|lexer| match lexer.token(()) {
+            .parse_element(|lexer| match lexer.token(())? {
                 Some(Token::Item) => Ok(Item),
                 Some(tok) => Err(Error::UnexpectedToken(tok, None)),
                 None => Err(Error::UnexpectedEOF(None)),

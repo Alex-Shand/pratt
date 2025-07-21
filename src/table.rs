@@ -105,18 +105,16 @@ impl<T: Token + std::fmt::Debug, Context: Copy, Ast> Table<T, Context, Ast> {
         bind: u8,
     ) -> Result<T, Ast> {
         let prefix = self
-            .row(lexer.peek(context).map(Token::typ).as_ref())
+            .row(lexer.peek(context)?.map(Token::typ).as_ref())
             .prefix
-            .ok_or_else(|| {
-                if let Some(token) = lexer.token(context) {
-                    Error::UnexpectedToken(token, None)
-                } else {
-                    Error::UnexpectedEOF(None)
-                }
+            .ok_or_else(|| match lexer.token(context) {
+                Ok(Some(token)) => Error::UnexpectedToken(token, None),
+                Ok(None) => Error::UnexpectedEOF(None),
+                Err(e) => e.into(),
             })?;
         let mut lhs = prefix(self, lexer, context)?;
 
-        while let Some(token) = lexer.peek(context) {
+        while let Some(token) = lexer.peek(context)? {
             let row = self.row(Some(&token.typ()));
             if bind > row.bind {
                 break;

@@ -2,7 +2,7 @@
 
 use std::marker::PhantomData;
 
-use crate::Lexer;
+use crate::{Error, Lexer, Token, error_util::format_error};
 
 pub mod builder;
 
@@ -60,7 +60,8 @@ pub mod builder;
 ///
 /// # Example
 /// ```
-/// use span::Chars;
+/// # use span::Chars;
+/// # use pratt::lexer::Result;
 ///
 /// #[derive(Debug, Clone, PartialEq, pratt::Token)]
 /// #[pratt(crate = pratt)]
@@ -79,7 +80,7 @@ pub mod builder;
 ///     Ident(String),
 /// }
 ///
-/// fn token_fn(chars: &mut Chars, (): ()) -> Option<Token> {
+/// fn token_fn(chars: &mut Chars, (): ()) -> Result<Option<Token>> {
 ///     // Capture the input iterator here to avoid specifying it below
 ///     macro_rules! keywords {
 ///         ($($tt:tt)*) => {
@@ -88,24 +89,24 @@ pub mod builder;
 ///     }
 ///     while let Some(c) = chars.skip_whitespace() {
 ///         keywords! {
-///             "one"    [char::is_whitespace] => return Some(Token::One)
-///             "two"    [char::is_whitespace] => return Some(Token::Two)
-///             "three"  [char::is_whitespace] => return Some(Token::Three)
-///             "or"     [char::is_whitespace] => return Some(Token::Or)
-///             "orange" [char::is_whitespace] => return Some(Token::Orange)
+///             "one"    [char::is_whitespace] => return Ok(Some(Token::One))
+///             "two"    [char::is_whitespace] => return Ok(Some(Token::Two))
+///             "three"  [char::is_whitespace] => return Ok(Some(Token::Three))
+///             "or"     [char::is_whitespace] => return Ok(Some(Token::Or))
+///             "orange" [char::is_whitespace] => return Ok(Some(Token::Orange))
 ///         }
 ///         if c.is_alphabetic() {
-///             return Some(Token::Ident(
+///             return Ok(Some(Token::Ident(
 ///                 chars.peek_while(char::is_alphanumeric).collect(),
-///             ));
+///             )));
 ///         }
 ///     }
-///     None
+///     Ok(None)
 /// }
 ///
 /// let text = "one two three or orange orchid";
 /// let mut lexer = pratt::lexer::builder().with_token_fn(token_fn).build(text);
-/// let tokens = pratt::lexer::iter(&mut lexer).collect::<Vec<_>>();
+/// let tokens = pratt::lexer::iter(&mut lexer).collect::<Result<Vec<_>>>().unwrap();
 /// assert_eq!(
 ///     tokens,
 ///     [
@@ -119,17 +120,126 @@ pub mod builder;
 /// );
 /// ```
 pub use pratt_derive::keywords;
+use span::Span;
+
+/// Result type returned by a lexer
+pub type Result<T> = std::result::Result<T, LexError>;
+
+/// Error type that the lexer is allowed to return to the parser
+#[derive(Debug, thiserror::Error)]
+pub enum LexError {
+    /// The lexer ran out of characters mid token
+    #[error("Unexpected EOF{}", format_error(.0))]
+    UnexpectedEOF(Option<String>),
+    /// The lexer encountered an unexpected character
+    #[error("Unexpected character `{}` at {}{}", .0, .1, format_error(.2))]
+    UnexpectedCharacter(char, Span, Option<String>),
+    /// Any custom error condition
+    #[error(transparent)]
+    Custom(#[from] Box<dyn std::error::Error + Send + Sync + 'static>),
+    /// Same as [LexError::Custom] but also carries a span pointing to where the
+    /// error occured
+    #[error("{source} at {span}")]
+    CustomSpanned {
+        #[allow(missing_docs)]
+        source: Box<dyn std::error::Error + Send + Sync + 'static>,
+        #[allow(missing_docs)]
+        span: Span,
+    },
+}
+
+impl<T: Token> From<LexError> for Error<T> {
+    fn from(value: LexError) -> Self {
+        match value {
+            LexError::UnexpectedEOF(msg) => Error::UnexpectedEOF(msg),
+            LexError::UnexpectedCharacter(c, span, msg) => {
+                Error::LexerUnexpectedCharacter(c, span, msg)
+            }
+            LexError::Custom(error) => Error::Custom(error),
+            LexError::CustomSpanned { source, span } => {
+                Error::CustomSpanned { source, span }
+            }
+        }
+    }
+}
+
+impl LexError {
+    /// Helper function for constructing [LexError::UnexpectedEOF] with a set of
+    /// expected characters
+    #[must_use]
+    pub fn unexpected_eof(expected: Vec<char>) -> Self {
+        let msg = format_expected(expected);
+        LexError::UnexpectedEOF(Some(msg))
+    }
+
+    /// Helper function for constructing [LexError::UnexpectedEOF] with a
+    /// message
+    pub fn unexpected_eof_msg(msg: impl Into<String>) -> Self {
+        LexError::UnexpectedEOF(Some(msg.into()))
+    }
+
+    /// Helper function for constructing [LexError::UnexpectedCharacter] with a
+    /// set of expected characters
+    #[must_use]
+    pub fn unexpected_char(c: char, span: Span, expected: Vec<char>) -> Self {
+        let msg = format_expected(expected);
+        LexError::UnexpectedCharacter(c, span, Some(msg))
+    }
+
+    /// Helper function for constructing [LexError::UnexpectedCharacter] with a
+    /// message
+    pub fn unexpected_char_msg(
+        c: char,
+        span: Span,
+        msg: impl Into<String>,
+    ) -> Self {
+        LexError::UnexpectedCharacter(c, span, Some(msg.into()))
+    }
+
+    /// Helper function for constructing [LexError::Custom]
+    pub fn custom(
+        e: impl Into<Box<dyn std::error::Error + Send + Sync + 'static>>,
+    ) -> Self {
+        LexError::Custom(e.into())
+    }
+
+    /// Helper function for constructing [LexError::Custom]
+    pub fn custom_spanned(
+        e: impl Into<Box<dyn std::error::Error + Send + Sync + 'static>>,
+        span: Span,
+    ) -> Self {
+        LexError::CustomSpanned {
+            source: e.into(),
+            span,
+        }
+    }
+}
+
+fn format_expected(expected: Vec<char>) -> String {
+    if expected.len() == 1 {
+        format!("Expected `{}`", expected[0])
+    } else {
+        format!(
+            "Expected one of {}",
+            expected
+                .into_iter()
+                .map(|c| format!("`{c}`"))
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+    }
+}
 
 /// Iterate tokens from a lexer, ignoring context
 pub fn iter<C: Default, L: Lexer<Context = C>>(
     lexer: &mut L,
-) -> impl Iterator<Item = L::Token> {
+) -> impl Iterator<Item = Result<L::Token>> {
     struct Iter<'a, C: Default, L: Lexer<Context = C>>(&'a mut L);
     impl<C: Default, L: Lexer<Context = C>> Iterator for Iter<'_, C, L> {
-        type Item = L::Token;
+        type Item = Result<L::Token>;
 
         fn next(&mut self) -> Option<Self::Item> {
-            self.0.token(C::default())
+            self.0.token(C::default()).transpose()
         }
     }
     Iter(lexer)
@@ -164,7 +274,8 @@ mod tests {
         Ident(String),
     }
 
-    fn token_fn(chars: &mut Chars, (): ()) -> Option<Token> {
+    #[expect(clippy::unnecessary_wraps)]
+    fn token_fn(chars: &mut Chars, (): ()) -> Result<Option<Token>> {
         macro_rules! keywords {
             ($($tt:tt)*) => {
                 super::keywords!(chars = chars, match = {$($tt)*})
@@ -173,19 +284,19 @@ mod tests {
         while let Some(c) = chars.skip_whitespace() {
             dbg!(c);
             keywords! {
-                "one"    [char::is_whitespace] => return Some(Token::One)
-                "two"    [char::is_whitespace] => return Some(Token::Two)
-                "three"  [char::is_whitespace] => return Some(Token::Three)
-                "or"     [char::is_whitespace] => return Some(Token::Or)
-                "orange" [char::is_whitespace] => return Some(Token::Orange)
+                "one"    [char::is_whitespace] => return Ok(Some(Token::One))
+                "two"    [char::is_whitespace] => return Ok(Some(Token::Two))
+                "three"  [char::is_whitespace] => return Ok(Some(Token::Three))
+                "or"     [char::is_whitespace] => return Ok(Some(Token::Or))
+                "orange" [char::is_whitespace] => return Ok(Some(Token::Orange))
             }
             if c.is_alphabetic() {
-                return Some(Token::Ident(
+                return Ok(Some(Token::Ident(
                     chars.peek_while(char::is_alphanumeric).collect(),
-                ));
+                )));
             }
         }
-        None
+        Ok(None)
     }
 
     fn lexer() -> StatelessLexerSingleTokenBuilder<(), Token> {
@@ -193,10 +304,10 @@ mod tests {
     }
 
     #[test]
-    fn test() {
+    fn test() -> Result<()> {
         let text = "one two three or orange orchid";
         let mut lexer = lexer().build(text);
-        let tokens = iter(&mut lexer).collect::<Vec<_>>();
+        let tokens = iter(&mut lexer).collect::<Result<Vec<_>>>()?;
         assert_eq!(
             tokens,
             [
@@ -208,5 +319,6 @@ mod tests {
                 Token::Ident(String::from("orchid"))
             ]
         );
+        Ok(())
     }
 }

@@ -1,4 +1,6 @@
-use crate::Token;
+use span::Span;
+
+use crate::{Token, error_util::format_error, lexer::LexError};
 
 /// Errors returned from [Table::parse](super::Table::parse) and
 /// [Table::parse_at](super::Table::parse_at)
@@ -43,12 +45,25 @@ pub enum Error<T: Token> {
     /// The parser has encountered a token in an invalid position
     #[error("Unexpected token `{}` at {}{}", .0.payload(), .0.span(), format_error(.1))]
     UnexpectedToken(T, Option<String>),
+    /// Forwarded error from the lexer when it encounters an unexpected
+    /// character, see [LexError::UnexpectedCharacter]
+    #[error("{}", LexError::UnexpectedCharacter(*.0, *.1, .2.clone()))]
+    LexerUnexpectedCharacter(char, Span, Option<String>),
     /// Never directly returned from either of the parser entry points, may be
     /// returned by parser functions to signal custom
     /// errors. [Error](std::error::Error) trait impl redirects to the inner
     /// error in this case
     #[error(transparent)]
     Custom(#[from] Box<dyn std::error::Error + Send + Sync + 'static>),
+    /// Same as [Error::Custom] but also carries a span pointing to where the
+    /// error occured
+    #[error("{source} at {span}")]
+    CustomSpanned {
+        #[allow(missing_docs)]
+        source: Box<dyn std::error::Error + Send + Sync + 'static>,
+        #[allow(missing_docs)]
+        span: Span,
+    },
 }
 
 impl<T: Token> Error<T> {
@@ -58,12 +73,15 @@ impl<T: Token> Error<T> {
     ) -> Self {
         Error::Custom(e.into())
     }
-}
 
-#[expect(clippy::ref_option)]
-fn format_error(e: &Option<String>) -> String {
-    let Some(e) = e else {
-        return String::new();
-    };
-    String::from(". ") + e
+    /// Helper function for constructing [Error::Custom]
+    pub fn custom_spanned(
+        e: impl Into<Box<dyn std::error::Error + Send + Sync + 'static>>,
+        span: Span,
+    ) -> Self {
+        Error::CustomSpanned {
+            source: e.into(),
+            span,
+        }
+    }
 }
