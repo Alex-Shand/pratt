@@ -408,7 +408,7 @@ checksum = "7a2ae44ef20feb57a68b23d846850f861394c2e02dc425a50098ae8c90267589"
 [[package]]
 name = "span"
 version = "0.1.0"
-source = "git+https://github.com/Alex-Shand/span.git#ac9b6e8a81533426e352ee25d9ed3f65aa3e965c"
+source = "git+https://github.com/Alex-Shand/span.git#ed90e8f34c9090bd9a46b6ab2296618dedc64104"
 dependencies = [
  "itertools",
  "owned_chars",
