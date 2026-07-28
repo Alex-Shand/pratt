@@ -1,7 +1,6 @@
 //! Derive macro for pratt::Token
 #![warn(elided_lifetimes_in_paths)]
 #![warn(missing_docs)]
-#![warn(noop_method_call)]
 #![warn(unreachable_pub)]
 #![warn(unused_crate_dependencies)]
 #![warn(unused_import_braces)]
@@ -15,7 +14,10 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::doc_markdown)]
 #![allow(clippy::let_underscore_untyped)]
+#![allow(clippy::similar_names)]
+#![allow(clippy::result_large_err)]
 #![allow(clippy::struct_field_names)]
+#![allow(clippy::missing_errors_doc)]
 
 mod derive_token;
 mod free;

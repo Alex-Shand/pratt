@@ -1,7 +1,7 @@
 use proc::{
+    Path, Result, TokenStream,
     quote::quote,
     syn::{Error, FnArg, Ident, Pat},
-    Path, Result, TokenStream,
 };
 
 pub(crate) fn generate(
@@ -104,10 +104,10 @@ pub(crate) fn generate(
 }
 
 pub(crate) fn extract_ident(arg: &FnArg) -> Option<&Ident> {
-    if let FnArg::Typed(p) = arg {
-        if let Pat::Ident(i) = &*p.pat {
-            return Some(&i.ident);
-        }
+    if let FnArg::Typed(p) = arg
+        && let Pat::Ident(i) = &*p.pat
+    {
+        return Some(&i.ident);
     }
     None
 }

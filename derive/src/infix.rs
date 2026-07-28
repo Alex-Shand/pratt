@@ -25,6 +25,7 @@ impl Infix {
             vis,
             sig,
             block,
+            ..
         }: ItemFn,
     ) -> Result<Self> {
         let (lexer, context) = Self::validate_args(&sig.inputs)?;

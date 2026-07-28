@@ -12,8 +12,8 @@ members = ["derive"]
 do_while = "0.1.0"
 pratt_derive = { path = "derive" }
 span = { git = "https://github.com/Alex-Shand/span.git" }
-thiserror = "2.0.18"
+thiserror = "2.0.19"
 
 [dev-dependencies]
-pretty_assertions = "1.4.0"
+pretty_assertions = "1.4.1"
 rstest = "0.26.1"

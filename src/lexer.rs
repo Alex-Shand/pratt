@@ -28,13 +28,13 @@ pub mod builder;
 /// "token" [is_terminator] => body
 /// ```
 /// * `"token"` is the character sequence which makes up the token as a string
-///    literal
+///   literal
 /// * `is_terminator` should be a function of type `fn(char) -> bool` which
-///    should return `true` if the passed character is a token break for the
-///    token associated with this branch. This may be different for each branch
-///    if necessary. See below for more discussion on token breaks.
+///   should return `true` if the passed character is a token break for the
+///   token associated with this branch. This may be different for each branch
+///   if necessary. See below for more discussion on token breaks.
 /// * `body` will typically be a `return` expression returning the correct token
-///    type. If it doesn't terminate the function it must evaluate to `()`.
+///   type. If it doesn't terminate the function it must evaluate to `()`.
 ///
 /// # Token Breaking
 /// In order to detect the case when a token is a proper prefix of a more
