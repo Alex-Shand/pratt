@@ -382,7 +382,7 @@ dependencies = [
 [[package]]
 name = "span"
 version = "0.1.0"
-source = "git+https://github.com/Alex-Shand/span.git#ed2b7681ef257e9554b276f94057e26bcb22b5d2"
+source = "git+https://github.com/Alex-Shand/span.git#ab72b68996276669d6977afb020780bee7b249dc"
 dependencies = [
  "itertools",
  "owned_chars",
